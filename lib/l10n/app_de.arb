@@ -19,7 +19,7 @@
   "birthdayIn": "{days, plural, =0{heute} =1{morgen} other{in {days} Tagen}}",
   "turnsAge": "wird {age}",
   "lastCall": "Letzter Anruf",
-  "callHint": "Nach einem Anruf auf den Punkt tippen · gedrückt halten für ein anderes Datum",
+  "callHint": "Nach dem Gespräch antippen · gedrückt halten für ein anderes Datum",
   "recentCalls": "Zuletzt: {dates}",
   "callLogged": "Anruf eingetragen: {when}",
   "undo": "Rückgängig",
@@ -125,5 +125,8 @@
   "paperCream": "Creme",
   "paperKraft": "Kraft",
   "paperBlue": "Blau",
-  "paperInk": "Tinte"
+  "paperInk": "Tinte",
+  "alreadyLoggedToday": "Heute ist schon ein Anruf eingetragen",
+  "alreadyLoggedOn": "Am {date} ist schon ein Anruf eingetragen",
+  "close": "Schließen"
 }

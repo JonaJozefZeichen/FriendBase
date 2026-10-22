@@ -2,138 +2,130 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../app/theme.dart';
 
-/// The paper every screen sits on: the paper colour with a fine dot grid,
-/// optionally with two paper scraps lying underneath the content.
+/// The paper every screen sits on: the paper colour with a fine dot grid.
+///
+/// The dots are anchored to the *screen*, not to the page: while a page
+/// slides in or out (or follows the iOS back swipe) its paper stays put, so
+/// only the content moves and no seam shows between the two pages.
 class PaperBackground extends StatelessWidget {
-  const PaperBackground({super.key, required this.child, this.scraps = false});
+  const PaperBackground({super.key, required this.child});
 
   final Widget child;
-
-  /// Decorative scraps (a ruled note and a kraft card with tape). Keep them
-  /// to screens with little text over them.
-  final bool scraps;
 
   @override
   Widget build(BuildContext context) {
     final paper = LedgerTokens.of(context).paper;
-    return CustomPaint(
-      painter: _DotGridPainter(paper.paper, paper.dot),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [if (scraps) ..._scraps(paper), child],
-      ),
+    final route = ModalRoute.of(context);
+    return _AnchoredPaper(
+      paper: paper.paper,
+      dot: paper.dot,
+      // Repaint on every frame of this page's transitions.
+      repaint: Listenable.merge([route?.animation, route?.secondaryAnimation]),
+      child: child,
     );
   }
-
-  static List<Widget> _scraps(Paper paper) => [
-    Positioned(
-      left: -24,
-      top: 190,
-      child: _Scrap(
-        width: 210,
-        height: 220,
-        angle: -7,
-        color: paper.scrapA,
-        child: CustomPaint(
-          painter: RuledPainter(
-            rule: paper.rule,
-            margin: paper.margin,
-            lineHeight: 20,
-            marginX: 22,
-          ),
-        ),
-      ),
-    ),
-    Positioned(
-      right: -34,
-      top: 330,
-      child: _Scrap(width: 190, height: 170, angle: 6, color: paper.scrapB),
-    ),
-    Positioned(
-      right: 56,
-      top: 318,
-      child: _Scrap(
-        width: 70,
-        height: 20,
-        angle: -4,
-        color: const Color(0xCCECDCAA),
-        shadow: false,
-      ),
-    ),
-  ];
 }
 
-class _Scrap extends StatelessWidget {
-  const _Scrap({
-    required this.width,
-    required this.height,
-    required this.angle,
-    required this.color,
-    this.child,
-    this.shadow = true,
+class _AnchoredPaper extends SingleChildRenderObjectWidget {
+  const _AnchoredPaper({
+    required this.paper,
+    required this.dot,
+    required this.repaint,
+    super.child,
   });
-
-  final double width;
-  final double height;
-  final double angle;
-  final Color color;
-  final Widget? child;
-  final bool shadow;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: ExcludeSemantics(
-        child: Transform.rotate(
-          angle: angle * math.pi / 180,
-          child: Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              color: color,
-              boxShadow: shadow
-                  ? const [
-                      BoxShadow(
-                        color: Color(0x1F2B2620),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DotGridPainter extends CustomPainter {
-  _DotGridPainter(this.paper, this.dot);
 
   final Color paper;
   final Color dot;
-
-  static const _spacing = 16.0;
+  final Listenable repaint;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = paper);
-    final paint = Paint()..color = dot;
-    for (var y = _spacing / 2; y < size.height; y += _spacing) {
-      for (var x = _spacing / 2; x < size.width; x += _spacing) {
-        canvas.drawCircle(Offset(x, y), 1.1, paint);
-      }
+  RenderAnchoredPaper createRenderObject(BuildContext context) =>
+      RenderAnchoredPaper(paper: paper, dot: dot, repaint: repaint);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    RenderAnchoredPaper renderObject,
+  ) {
+    renderObject
+      ..paper = paper
+      ..dot = dot
+      ..repaint = repaint;
+  }
+}
+
+/// Paints the paper and a dot grid aligned to global (screen) coordinates.
+class RenderAnchoredPaper extends RenderProxyBox {
+  RenderAnchoredPaper({
+    required this._paper,
+    required this._dot,
+    required this._repaint,
+  });
+
+  static const spacing = 16.0;
+
+  Color _paper;
+  set paper(Color value) {
+    if (value == _paper) return;
+    _paper = value;
+    markNeedsPaint();
+  }
+
+  Color _dot;
+  set dot(Color value) {
+    if (value == _dot) return;
+    _dot = value;
+    markNeedsPaint();
+  }
+
+  Listenable _repaint;
+  set repaint(Listenable value) {
+    if (identical(value, _repaint)) return;
+    if (attached) {
+      _repaint.removeListener(markNeedsPaint);
+      value.addListener(markNeedsPaint);
     }
+    _repaint = value;
+  }
+
+  /// Where the first dot was drawn, in screen coordinates (for tests).
+  @visibleForTesting
+  Offset? debugFirstDotGlobal;
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _repaint.addListener(markNeedsPaint);
   }
 
   @override
-  bool shouldRepaint(_DotGridPainter old) =>
-      old.paper != paper || old.dot != dot;
+  void detach() {
+    _repaint.removeListener(markNeedsPaint);
+    super.detach();
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final canvas = context.canvas;
+    canvas.drawRect(offset & size, Paint()..color = _paper);
+    // Our top-left corner on screen, including any transition transform.
+    final origin = localToGlobal(Offset.zero);
+    const half = spacing / 2;
+    final x0 = (half - origin.dx) % spacing;
+    final y0 = (half - origin.dy) % spacing;
+    debugFirstDotGlobal = origin + Offset(x0, y0);
+    final paint = Paint()..color = _dot;
+    for (var y = y0; y < size.height; y += spacing) {
+      for (var x = x0; x < size.width; x += spacing) {
+        canvas.drawCircle(offset + Offset(x, y), 1.1, paint);
+      }
+    }
+    super.paint(context, offset);
+  }
 }
 
 /// Frosted glass: blur of whatever lies behind, a translucent fill and a
@@ -333,8 +325,9 @@ class Polaroid extends StatelessWidget {
   }
 }
 
-/// The round glass "lens" with an ink dot: tap after a call, hold for an
-/// earlier date.
+/// The round glass "lens" for logging a call: a chat bubble with a check
+/// ("we talked"). Once today is logged it turns solid ([done]). Tap after a
+/// call, hold for an earlier date.
 class LensButton extends StatelessWidget {
   const LensButton({
     super.key,
@@ -342,12 +335,16 @@ class LensButton extends StatelessWidget {
     required this.hint,
     required this.onTap,
     required this.onLongPress,
+    this.done = false,
   });
 
   final String label;
   final String hint;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+
+  /// Today's call is already logged.
+  final bool done;
 
   @override
   Widget build(BuildContext context) {
@@ -360,24 +357,28 @@ class LensButton extends StatelessWidget {
         label: label,
         hint: hint,
         excludeSemantics: true,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           width: 58,
           height: 58,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: RadialGradient(
-              center: const Alignment(0, -0.3),
-              colors: dark
-                  ? [
-                      Colors.white.withValues(alpha: 0.22),
-                      Colors.white.withValues(alpha: 0.06),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.95),
-                      Colors.white.withValues(alpha: 0.4),
-                    ],
-            ),
-            border: Border.all(color: paper.glassRim),
+            color: done ? paper.accent : null,
+            gradient: done
+                ? null
+                : RadialGradient(
+                    center: const Alignment(0, -0.3),
+                    colors: dark
+                        ? [
+                            Colors.white.withValues(alpha: 0.22),
+                            Colors.white.withValues(alpha: 0.06),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.95),
+                            Colors.white.withValues(alpha: 0.4),
+                          ],
+                  ),
+            border: Border.all(color: done ? paper.accent : paper.glassRim),
             boxShadow: [
               BoxShadow(
                 color: paper.accent.withValues(alpha: 0.25),
@@ -392,15 +393,12 @@ class LensButton extends StatelessWidget {
               customBorder: const CircleBorder(),
               onTap: onTap,
               onLongPress: onLongPress,
-              child: Center(
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: paper.accent,
-                    shape: BoxShape.circle,
-                  ),
-                ),
+              child: Icon(
+                done
+                    ? Icons.mark_chat_read_rounded
+                    : Icons.mark_chat_read_outlined,
+                size: 26,
+                color: done ? paper.onAccent : paper.accent,
               ),
             ),
           ),

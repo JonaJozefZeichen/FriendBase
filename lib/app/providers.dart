@@ -100,10 +100,17 @@ class FriendsNotifier extends AsyncNotifier<List<Friend>> {
     return saved;
   }
 
-  Future<Friend> logCall(Friend friend, [DateTime? at]) =>
-      save(friend.withCall(at ?? DateTime.now()));
+  /// Logs a call at [at] (default now). Returns the saved friend, or null
+  /// if that day already has a call (one per day).
+  Future<Friend?> logCall(Friend friend, [DateTime? at]) async {
+    final time = at ?? DateTime.now();
+    if (friend.hasCallOn(time)) return null;
+    return save(friend.withCall(time));
+  }
 
-  Future<Friend> undoLastCall(Friend friend) => save(friend.withoutLastCall());
+  /// Takes back the call logged for [at].
+  Future<Friend> undoCall(Friend friend, DateTime at) =>
+      save(friend.withoutCall(at));
 
   Future<Friend> addImage(Friend friend, String sourcePath) async =>
       _put(await _repo.addImage(friend, sourcePath));

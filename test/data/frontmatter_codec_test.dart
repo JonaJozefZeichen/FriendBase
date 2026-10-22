@@ -140,11 +140,21 @@ void main() {
     });
   });
 
-  test('withCall / withoutLastCall', () {
+  test('one call per day; withoutCall removes exactly that entry', () {
     var f = const Friend(id: '1', name: 'A');
     f = f.withCall(DateTime(2026, 1, 1, 9, 5));
     f = f.withCall(DateTime(2026, 2, 1, 10, 0));
     expect(f.calls, ['2026-01-01T09:05', '2026-02-01T10:00']);
-    expect(f.withoutLastCall().calls, ['2026-01-01T09:05']);
+
+    // A second call on the same day is ignored.
+    expect(f.withCall(DateTime(2026, 2, 1, 22, 30)).calls, f.calls);
+    expect(f.hasCallOn(DateTime(2026, 2, 1)), isTrue);
+    expect(f.hasCallOn(DateTime(2026, 2, 2)), isFalse);
+
+    // Undo of a back-dated entry removes that one, not the newest.
+    expect(f.withoutCall(DateTime(2026, 1, 1, 9, 5)).calls, [
+      '2026-02-01T10:00',
+    ]);
+    expect(f.withoutCall(DateTime(2025, 5, 5)).calls, f.calls);
   });
 }

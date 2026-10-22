@@ -39,7 +39,7 @@ class Paper {
   final Color glassFill;
   final Color glassRim;
 
-  /// Decorative paper scraps lying under the glass.
+  /// Light paper (ruled notes page) and a second paper tone.
   final Color scrapA;
   final Color scrapB;
 

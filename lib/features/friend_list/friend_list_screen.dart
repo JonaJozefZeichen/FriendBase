@@ -46,7 +46,6 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
 
     return Scaffold(
       body: PaperBackground(
-        scraps: true,
         child: SafeArea(
           child: Stack(
             children: [

@@ -338,7 +338,10 @@ class _CallSection extends ConsumerWidget {
                 ),
               ),
               LensButton(
-                label: context.l10n.calledToday,
+                done: friend.hasCallOn(DateTime.now()),
+                label: friend.hasCallOn(DateTime.now())
+                    ? context.l10n.alreadyLoggedToday
+                    : context.l10n.calledToday,
                 hint: context.l10n.calledTodayHint,
                 onTap: () => _logCall(context, ref, DateTime.now()),
                 onLongPress: () => _logPastCall(context, ref),
@@ -369,6 +372,10 @@ class _CallSection extends ConsumerWidget {
     final style = ref.read(settingsProvider).dateStyle;
     final updated = await notifier.logCall(friend, at);
     if (!context.mounted) return;
+    if (updated == null) {
+      _showAlreadyLogged(context, at, style);
+      return;
+    }
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -383,7 +390,30 @@ class _CallSection extends ConsumerWidget {
           persist: false,
           action: SnackBarAction(
             label: context.l10n.undo,
-            onPressed: () => notifier.undoLastCall(updated),
+            onPressed: () => notifier.undoCall(updated, at),
+          ),
+        ),
+      );
+  }
+
+  /// One call per day: say so instead of logging a second one.
+  void _showAlreadyLogged(BuildContext context, DateTime day, DateStyle style) {
+    final today = DateTime.now();
+    final isToday =
+        day.year == today.year &&
+        day.month == today.month &&
+        day.day == today.day;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 3),
+          content: Text(
+            isToday
+                ? context.l10n.alreadyLoggedToday
+                : context.l10n.alreadyLoggedOn(
+                    displayDate(style, day, withYear: day.year != today.year),
+                  ),
           ),
         ),
       );
@@ -398,6 +428,10 @@ class _CallSection extends ConsumerWidget {
       lastDate: now,
     );
     if (date == null || !context.mounted) return;
+    if (friend.hasCallOn(date)) {
+      _showAlreadyLogged(context, date, ref.read(settingsProvider).dateStyle);
+      return;
+    }
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
@@ -439,23 +473,24 @@ class _ImageStrip extends ConsumerWidget {
           final file = repo.imageFile(friend, friend.images[i]);
           const broken = Center(child: Icon(Icons.broken_image_outlined));
           return GestureDetector(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    ImageViewScreen(friendId: friend.id, initialIndex: i),
-              ),
-            ),
+            // Lifts the picture into a polaroid hovering over this view.
+            onTap: () => Navigator.of(
+              context,
+            ).push(ImageViewScreen.route(friendId: friend.id, initialIndex: i)),
             child: Polaroid(
               tilt: i.isEven ? -3 : 2,
               size: _tile,
-              child: file == null
-                  ? broken
-                  : Image.file(
-                      file,
-                      fit: BoxFit.cover,
-                      cacheWidth: 200,
-                      errorBuilder: (_, _, _) => broken,
-                    ),
+              child: Hero(
+                tag: imageHeroTag(friend, friend.images[i]),
+                child: file == null
+                    ? broken
+                    : Image.file(
+                        file,
+                        fit: BoxFit.cover,
+                        cacheWidth: 200,
+                        errorBuilder: (_, _, _) => broken,
+                      ),
+              ),
             ),
           );
         },

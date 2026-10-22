@@ -102,7 +102,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastCall => 'Last call';
 
   @override
-  String get callHint => 'Tap the dot after a call · hold it to pick a date';
+  String get callHint => 'Tap after you talked · hold to pick a date';
 
   @override
   String recentCalls(String dates) {
@@ -471,4 +471,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paperInk => 'Ink';
+
+  @override
+  String get alreadyLoggedToday => 'Already logged a call today';
+
+  @override
+  String alreadyLoggedOn(String date) {
+    return 'A call on $date is already logged';
+  }
+
+  @override
+  String get close => 'Close';
 }

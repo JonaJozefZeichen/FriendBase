@@ -10,6 +10,7 @@ import 'package:friendbase/domain/app_settings.dart';
 import 'package:friendbase/data/vault_storage.dart';
 import 'package:friendbase/domain/friend.dart';
 import 'package:friendbase/domain/reminders.dart';
+import 'package:friendbase/ui_kit/ledger.dart';
 import 'package:friendbase/main.dart';
 
 import 'dart:io';
@@ -351,7 +352,8 @@ void main() {
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(repo.friends.single.images.map((i) => i.file), ['assets/a.jpg']);
-    expect(find.text('1 / 1'), findsOneWidget);
+    // One picture left: no counter.
+    expect(find.textContaining(' / '), findsNothing);
   });
 
   testWidgets('delete friend lives on the edit screen', (tester) async {
@@ -432,7 +434,9 @@ void main() {
   testWidgets('options: sort, compact list, detail under each name', (
     tester,
   ) async {
-    final soon = DateTime.now().add(const Duration(days: 3));
+    // Calendar days, not 72 hours: across a DST change those differ.
+    final now = DateTime.now();
+    final soon = DateTime(now.year, now.month, now.day + 3);
     final mm = soon.month.toString().padLeft(2, '0');
     final dd = soon.day.toString().padLeft(2, '0');
     await tester.pumpWidget(
@@ -721,13 +725,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Undo'), findsNothing);
 
-    await tester.tap(find.byTooltip('Called today'));
+    // Today is logged now: the lens says so and refuses a second call.
+    await tester.tap(find.byTooltip('Already logged a call today'));
     await tester.pumpAndSettle();
-    expect(find.text('Undo'), findsOneWidget);
+    expect(find.text('Undo'), findsNothing);
+    expect(find.text('Already logged a call today'), findsWidgets);
+
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.text('FriendBase'), findsOneWidget);
-    expect(find.text('Undo'), findsNothing);
+    expect(find.text('Already logged a call today'), findsNothing);
   });
 
   testWidgets('friend view picture is 80px; settings says Show in list', (
@@ -832,5 +839,103 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Kurz gesagt'), findsOneWidget);
     expect(find.text('Gültig ab 22. Oktober 2026'), findsOneWidget);
+  });
+
+  testWidgets('one call per day: second tap refused, Undo frees the day', (
+    tester,
+  ) async {
+    final repo = _MemoryRepository([
+      const Friend(id: '1', name: 'Anna', folder: 'a'),
+    ]);
+    await tester.pumpWidget(_app(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anna'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Called today'));
+    await tester.pumpAndSettle();
+    expect(repo.friends.single.calls, hasLength(1));
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Already logged a call today'));
+    await tester.pumpAndSettle();
+    expect(repo.friends.single.calls, hasLength(1), reason: 'refused');
+    expect(
+      find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.text('Already logged a call today'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Undo'), findsNothing);
+
+    // The lens stays in its "done" state for the rest of the day.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Called today'), findsNothing);
+  });
+
+  testWidgets('undo frees the day again', (tester) async {
+    final repo = _MemoryRepository([
+      const Friend(id: '1', name: 'Anna', folder: 'a'),
+    ]);
+    await tester.pumpWidget(_app(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anna'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Called today'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(repo.friends.single.calls, isEmpty);
+    expect(find.byTooltip('Called today'), findsOneWidget);
+  });
+
+  testWidgets('picture opens as an overlay above the friend view', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([
+          const Friend(
+            id: '1',
+            name: 'Anna',
+            folder: 'a',
+            images: [FriendImage(file: 'assets/a.jpg', caption: 'cake')],
+          ),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anna'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Image).first);
+    await tester.pumpAndSettle();
+
+    // The friend view is still built underneath (see-through route).
+    expect(find.text('cake'), findsOneWidget);
+    expect(find.text('Anna'), findsOneWidget);
+    expect(find.byTooltip('Close'), findsOneWidget);
+
+    // Tapping outside the polaroid puts it back.
+    await tester.tapAt(const Offset(10, 590));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Close'), findsNothing);
+    expect(find.text('cake'), findsNothing);
+  });
+
+  testWidgets('paper dots sit on the screen grid', (tester) async {
+    await tester.pumpWidget(_app(_MemoryRepository([])));
+    await tester.pumpAndSettle();
+
+    final paper = tester.renderObject<RenderAnchoredPaper>(
+      find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == '_AnchoredPaper',
+      ),
+    );
+    final dot = paper.debugFirstDotGlobal!;
+    expect(dot.dx % RenderAnchoredPaper.spacing, closeTo(8, 0.001));
+    expect(dot.dy % RenderAnchoredPaper.spacing, closeTo(8, 0.001));
   });
 }

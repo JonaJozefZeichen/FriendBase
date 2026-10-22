@@ -215,7 +215,7 @@ abstract class AppLocalizations {
   /// No description provided for @callHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap the dot after a call · hold it to pick a date'**
+  /// **'Tap after you talked · hold to pick a date'**
   String get callHint;
 
   /// No description provided for @recentCalls.
@@ -853,6 +853,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ink'**
   String get paperInk;
+
+  /// No description provided for @alreadyLoggedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Already logged a call today'**
+  String get alreadyLoggedToday;
+
+  /// No description provided for @alreadyLoggedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'A call on {date} is already logged'**
+  String alreadyLoggedOn(String date);
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
 }
 
 class _AppLocalizationsDelegate

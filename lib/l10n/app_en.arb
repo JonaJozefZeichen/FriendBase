@@ -71,7 +71,7 @@
     }
   },
   "lastCall": "Last call",
-  "callHint": "Tap the dot after a call · hold it to pick a date",
+  "callHint": "Tap after you talked · hold to pick a date",
   "recentCalls": "Recent: {dates}",
   "@recentCalls": {
     "placeholders": {
@@ -323,5 +323,15 @@
   "paperCream": "Cream",
   "paperKraft": "Kraft",
   "paperBlue": "Blue",
-  "paperInk": "Ink"
+  "paperInk": "Ink",
+  "alreadyLoggedToday": "Already logged a call today",
+  "alreadyLoggedOn": "A call on {date} is already logged",
+  "@alreadyLoggedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "close": "Close"
 }

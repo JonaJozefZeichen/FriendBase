@@ -104,7 +104,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get callHint =>
-      'Nach einem Anruf auf den Punkt tippen · gedrückt halten für ein anderes Datum';
+      'Nach dem Gespräch antippen · gedrückt halten für ein anderes Datum';
 
   @override
   String recentCalls(String dates) {
@@ -473,4 +473,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get paperInk => 'Tinte';
+
+  @override
+  String get alreadyLoggedToday => 'Heute ist schon ein Anruf eingetragen';
+
+  @override
+  String alreadyLoggedOn(String date) {
+    return 'Am $date ist schon ein Anruf eingetragen';
+  }
+
+  @override
+  String get close => 'Schließen';
 }

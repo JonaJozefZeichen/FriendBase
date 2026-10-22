@@ -68,14 +68,21 @@ class Friend {
     return times.isEmpty ? null : times.last;
   }
 
-  Friend withCall(DateTime at) =>
-      copyWith(calls: [...calls, formatCallTime(at)]);
+  /// Whether a call is already logged on [day]'s calendar date.
+  bool hasCallOn(DateTime day) => callTimes.any(
+    (t) => t.year == day.year && t.month == day.month && t.day == day.day,
+  );
 
-  /// Removes the most recent call entry, if any.
-  Friend withoutLastCall() {
-    final last = lastCall;
-    if (last == null) return this;
-    final index = calls.lastIndexWhere((c) => DateTime.tryParse(c) == last);
+  /// Adds a call at [at] — at most one per day, so a second call on the
+  /// same date leaves the friend unchanged.
+  Friend withCall(DateTime at) =>
+      hasCallOn(at) ? this : copyWith(calls: [...calls, formatCallTime(at)]);
+
+  /// Removes the entry logged for [at] (as written by [withCall]).
+  Friend withoutCall(DateTime at) {
+    final entry = formatCallTime(at);
+    final index = calls.lastIndexOf(entry);
+    if (index < 0) return this;
     return copyWith(calls: [...calls]..removeAt(index));
   }
 

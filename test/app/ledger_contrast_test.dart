@@ -83,4 +83,41 @@ void main() {
       }
     }
   });
+
+  testWidgets('paper dots stay on the screen grid when the page moves', (
+    tester,
+  ) async {
+    for (final shift in [
+      Offset.zero,
+      const Offset(37.5, 11),
+      const Offset(-123, 0),
+    ]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildTheme(kCream),
+          home: Transform.translate(
+            offset: shift,
+            child: const PaperBackground(child: SizedBox.expand()),
+          ),
+        ),
+      );
+      final paper = tester.renderObject<RenderAnchoredPaper>(
+        find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_AnchoredPaper',
+        ),
+      );
+      final dot = paper.debugFirstDotGlobal!;
+      // Always on the same screen grid, wherever the page currently is.
+      expect(
+        dot.dx % RenderAnchoredPaper.spacing,
+        closeTo(8, 0.001),
+        reason: '$shift',
+      );
+      expect(
+        dot.dy % RenderAnchoredPaper.spacing,
+        closeTo(8, 0.001),
+        reason: '$shift',
+      );
+    }
+  });
 }
