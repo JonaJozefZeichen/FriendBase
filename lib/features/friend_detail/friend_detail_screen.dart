@@ -46,45 +46,49 @@ class FriendDetailScreen extends ConsumerWidget {
     }
 
     const gutter = EdgeInsets.fromLTRB(16, 20, 16, 0);
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: _InfoCard(friend: friend)),
-                SliverPadding(
-                  padding: gutter,
-                  sliver: SliverToBoxAdapter(
-                    child: _ImageStrip(friend: friend),
-                  ),
-                ),
-                SliverPadding(
-                  padding: gutter.copyWith(bottom: 20),
-                  sliver: SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: SectionCard(
-                      title: 'Notes',
-                      fill: true,
-                      child: friend.notes.trim().isEmpty
-                          ? Text(
-                              kNotesHint,
-                              style: TextStyle(
-                                color: Theme.of(context).hintColor,
-                              ),
-                            )
-                          : SelectableText(
-                              friend.notes.trim(),
-                              style: const TextStyle(height: 1.45),
-                            ),
+    // Its own messenger: the Undo snackbar belongs to this page and goes
+    // away with it instead of following you back to the list.
+    return ScaffoldMessenger(
+      child: Scaffold(
+        body: SafeArea(
+          child: Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(child: _InfoCard(friend: friend)),
+                  SliverPadding(
+                    padding: gutter,
+                    sliver: SliverToBoxAdapter(
+                      child: _ImageStrip(friend: friend),
                     ),
                   ),
-                ),
-              ],
-            ),
-            // Above the scroll view, so it stays put while scrolling.
-            const Positioned(left: 8, top: 8, child: BackRoundButton()),
-          ],
+                  SliverPadding(
+                    padding: gutter.copyWith(bottom: 20),
+                    sliver: SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: SectionCard(
+                        title: 'Notes',
+                        fill: true,
+                        child: friend.notes.trim().isEmpty
+                            ? Text(
+                                kNotesHint,
+                                style: TextStyle(
+                                  color: Theme.of(context).hintColor,
+                                ),
+                              )
+                            : SelectableText(
+                                friend.notes.trim(),
+                                style: const TextStyle(height: 1.45),
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Above the scroll view, so it stays put while scrolling.
+              const Positioned(left: 8, top: 8, child: BackRoundButton()),
+            ],
+          ),
         ),
       ),
     );
@@ -118,13 +122,17 @@ class _InfoCard extends ConsumerWidget {
                 const SizedBox(width: 32),
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: FriendAvatar(friend: friend, size: 56, square: true),
+                  child: FriendAvatar(friend: friend, size: 80, square: true),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 10),
+                  child: Container(
+                    // As tall as the picture, with name + nickname centred.
+                    constraints: const BoxConstraints(minHeight: 86),
+                    padding: const EdgeInsets.only(top: 6),
+                    alignment: Alignment.centerLeft,
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -301,12 +309,6 @@ class _CallSection extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Text(
-                      'Every ${status.intervalDays} days',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -355,6 +357,9 @@ class _CallSection extends ConsumerWidget {
             'Call logged: ${displayDate(style, at)} '
             '${formatCallTime(at).substring(11)}',
           ),
+          duration: const Duration(seconds: 4),
+          // With an action, snackbars stay until dismissed by default.
+          persist: false,
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () => notifier.undoLastCall(updated),

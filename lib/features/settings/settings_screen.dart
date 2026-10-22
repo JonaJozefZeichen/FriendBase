@@ -104,7 +104,7 @@ class SettingsScreen extends ConsumerWidget {
                   onSelected: (v) => update((s) => s.copyWith(sort: v)),
                 ),
                 const SizedBox(height: 16),
-                const _Label('Under each name'),
+                const _Label('Show in list'),
                 SegmentedChoice<ListDetail>(
                   options: const [
                     (ListDetail.lastCall, 'Last call', null),

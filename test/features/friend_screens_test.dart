@@ -694,4 +694,58 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.friends.single.avatar, isNull);
   });
+
+  testWidgets('Undo disappears after 4 seconds and when leaving', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([const Friend(id: '1', name: 'Anna', folder: 'a')]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anna'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Called today'));
+    await tester.pumpAndSettle();
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.text('Undo'), findsNothing);
+
+    await tester.tap(find.byTooltip('Called today'));
+    await tester.pumpAndSettle();
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('FriendBase'), findsOneWidget);
+    expect(find.text('Undo'), findsNothing);
+  });
+
+  testWidgets('friend view picture is 80px; settings says Show in list', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([
+          const Friend(id: '1', name: 'Anna', folder: 'a', nickname: 'Anni'),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anna'));
+    await tester.pumpAndSettle();
+    final picture = find.ancestor(
+      of: find.text('A'),
+      matching: find.byType(Container),
+    );
+    expect(tester.getSize(picture.first), const Size(80, 80));
+    expect(find.textContaining('Every'), findsNothing);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    await _openOptions(tester, find.text('Show in list'));
+    expect(find.text('Show in list'), findsOneWidget);
+  });
 }
