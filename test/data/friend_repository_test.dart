@@ -82,6 +82,36 @@ void main() {
     expect(copied.existsSync(), isFalse);
   });
 
+  test('setAvatar replaces the old picture, removeAvatar deletes it', () async {
+    final source = File('${root.path}/me.png')..writeAsBytesSync([7]);
+    var friend = await repo.save(const Friend(id: '1', name: 'Anna'));
+
+    friend = await repo.setAvatar(friend, source.path);
+    final first = repo.avatarFile(friend)!;
+    expect(first.readAsBytesSync(), [7]);
+    expect((await repo.loadAll()).single.avatar, friend.avatar);
+
+    friend = await repo.setAvatar(friend, source.path);
+    expect(first.existsSync(), isFalse, reason: 'old picture cleaned up');
+    final second = repo.avatarFile(friend)!;
+    expect(second.existsSync(), isTrue);
+
+    friend = await repo.removeAvatar(friend);
+    expect(friend.avatar, isNull);
+    expect(second.existsSync(), isFalse);
+  });
+
+  test('removing an avatar never deletes a reference image', () async {
+    final source = File('${root.path}/me.png')..writeAsBytesSync([7]);
+    var friend = await repo.save(const Friend(id: '1', name: 'Anna'));
+    friend = await repo.addImage(friend, source.path);
+    final shared = friend.images.single.file;
+    // A hand-edited file may point avatar at one of the images.
+    friend = await repo.save(friend.copyWith(avatar: () => shared));
+    friend = await repo.removeAvatar(friend);
+    expect(repo.imageFile(friend, friend.images.single)!.existsSync(), isTrue);
+  });
+
   test('image paths cannot leave the friend folder', () {
     const friend = Friend(id: '1', name: 'A', folder: 'a');
     for (final unsafe in ['../b/friend.md', '/etc/passwd', 'assets//x']) {

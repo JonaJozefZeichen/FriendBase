@@ -107,6 +107,12 @@ class FriendsNotifier extends AsyncNotifier<List<Friend>> {
   Future<Friend> addImage(Friend friend, String sourcePath) async =>
       _put(await _repo.addImage(friend, sourcePath));
 
+  Future<Friend> setAvatar(Friend friend, String sourcePath) async =>
+      _put(await _repo.setAvatar(friend, sourcePath));
+
+  Future<Friend> removeAvatar(Friend friend) async =>
+      _put(await _repo.removeAvatar(friend));
+
   Future<Friend> removeImage(Friend friend, FriendImage image) async =>
       _put(await _repo.removeImage(friend, image));
 

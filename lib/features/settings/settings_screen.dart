@@ -1,18 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../domain/app_settings.dart';
 import '../../ui_kit/widgets.dart';
-
-const _repoUrl = 'https://github.com/JonaJozefZeichen/FriendBase';
-const _author = 'Jona Jožef Zeichen';
-const _legalese =
-    '© 2026 $_author\n'
-    'Released under the MIT License.';
+import '../about/about_screen.dart';
 
 /// App options, opened from the button on the friend list.
 class SettingsScreen extends ConsumerWidget {
@@ -76,13 +69,6 @@ class SettingsScreen extends ConsumerWidget {
                   value: settings.compactList,
                   onChanged: (v) => update((s) => s.copyWith(compactList: v)),
                 ),
-                ToggleRow(
-                  label: 'Upcoming birthdays in list',
-                  subtitle: 'Within the next 14 days',
-                  value: settings.birthdaysInList,
-                  onChanged: (v) =>
-                      update((s) => s.copyWith(birthdaysInList: v)),
-                ),
               ],
             ),
           ),
@@ -102,13 +88,37 @@ class SettingsScreen extends ConsumerWidget {
                   selected: settings.sort,
                   onSelected: (v) => update((s) => s.copyWith(sort: v)),
                 ),
+                const SizedBox(height: 16),
+                const _Label('Under each name'),
+                SegmentedChoice<ListDetail>(
+                  options: const [
+                    (ListDetail.lastCall, 'Last call', null),
+                    (ListDetail.birthday, 'Birthday', null),
+                    (ListDetail.none, 'Nothing', null),
+                  ],
+                  selected: settings.listDetail,
+                  onSelected: (v) => update((s) => s.copyWith(listDetail: v)),
+                ),
               ],
             ),
           ),
           gap,
           _RemindersCard(settings: settings, update: update),
           gap,
-          const _AboutCard(),
+          SectionCard(
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              leading: const Icon(Icons.info_outline_rounded),
+              title: const Text('About FriendBase'),
+              subtitle: const Text('Version, your data, privacy, licences'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(kRadius),
+              ),
+              onTap: () => Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const AboutScreen())),
+            ),
+          ),
         ],
       ),
     );
@@ -352,79 +362,6 @@ class _RemindersCard extends ConsumerWidget {
     update(
       (s) =>
           s.copyWith(reminderHour: picked.hour, reminderMinute: picked.minute),
-    );
-  }
-}
-
-class _AboutCard extends ConsumerWidget {
-  const _AboutCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
-    final version = ref.watch(appVersionProvider).value ?? '…';
-    final repo = ref.watch(friendRepositoryProvider);
-    final count = ref.watch(friendsProvider).value?.length ?? 0;
-    final problems = repo.problems;
-    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
-
-    return SectionCard(
-      title: 'About',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'FriendBase $version',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Text('Made by $_author', style: muted),
-          const SizedBox(height: 12),
-          const Text(
-            'Everything stays on this phone. Each friend is a plain Markdown '
-            'file (friends/<name>/friend.md) with their images next to it, '
-            'readable in Obsidian or any text editor.',
-            style: TextStyle(height: 1.4),
-          ),
-          const SizedBox(height: 16),
-          const _Label('Vault'),
-          SelectableText(repo.storage.root.path, style: muted),
-          if (isIOS) ...[
-            const SizedBox(height: 4),
-            Text('Files app → On My iPhone → FriendBase', style: muted),
-          ],
-          const SizedBox(height: 12),
-          Text('$count friend${count == 1 ? '' : 's'}'),
-          if (problems.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text('${problems.length} file(s) could not be read:'),
-            for (final p in problems)
-              Text('· ${p.folder}: ${p.message}', style: muted),
-          ],
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () => launchUrl(
-              Uri.parse(_repoUrl),
-              mode: LaunchMode.externalApplication,
-            ),
-            icon: const Icon(Icons.code_rounded),
-            label: const Text('Source code'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => showLicensePage(
-              context: context,
-              applicationName: 'FriendBase',
-              applicationVersion: version,
-              applicationLegalese: _legalese,
-            ),
-            icon: const Icon(Icons.description_outlined),
-            label: const Text('Licences'),
-          ),
-        ],
-      ),
     );
   }
 }

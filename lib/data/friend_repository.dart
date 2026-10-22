@@ -78,6 +78,37 @@ class FriendRepository {
     return updated;
   }
 
+  /// Copies the picture at [sourcePath] into the friend's assets as their
+  /// profile picture, replacing (and deleting) any previous one.
+  Future<Friend> setAvatar(Friend friend, String sourcePath) async {
+    final saved = friend.folder.isEmpty ? await save(friend) : friend;
+    final file = await storage.importAsset(saved.folder, File(sourcePath));
+    final updated = await save(saved.copyWith(avatar: () => file));
+    await _deleteAvatarFile(saved);
+    return updated;
+  }
+
+  /// Clears the profile picture and deletes its file.
+  Future<Friend> removeAvatar(Friend friend) async {
+    final updated = await save(friend.copyWith(avatar: () => null));
+    await _deleteAvatarFile(friend);
+    return updated;
+  }
+
+  Future<void> _deleteAvatarFile(Friend friend) async {
+    final old = friend.avatar;
+    // Never delete a file that is also one of the friend's images.
+    if (old == null || friend.images.any((i) => i.file == old)) return;
+    await storage.deleteAsset(friend.folder, old);
+  }
+
+  /// The profile picture on disk, or null if none is set or its path is
+  /// unsafe.
+  File? avatarFile(Friend friend) =>
+      friend.avatar == null || friend.folder.isEmpty
+      ? null
+      : storage.resolve(friend.folder, friend.avatar!);
+
   /// The image's file on disk, or null if its path is unsafe.
   File? imageFile(Friend friend, FriendImage image) =>
       storage.resolve(friend.folder, image.file);

@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource;
 
 import '../../app/providers.dart';
 import '../../domain/birthday.dart';
 import '../../domain/call_status.dart';
 import '../../domain/friend.dart';
 import '../../domain/ulid.dart';
+import '../../ui_kit/friend_avatar.dart';
+import '../../ui_kit/image_source_sheet.dart';
 
 /// Create a friend (when [friend] is null) or edit an existing one.
 class FriendEditScreen extends ConsumerStatefulWidget {
@@ -36,6 +41,12 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
   );
   late final _notes = TextEditingController(text: widget.friend?.notes);
   bool _saving = false;
+
+  /// A newly picked profile picture, applied on save.
+  String? _pendingAvatar;
+
+  /// The existing profile picture should be removed on save.
+  bool _avatarRemoved = false;
 
   @override
   void dispose() {
@@ -78,7 +89,13 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
       notes: _notes.text,
     );
     try {
-      await ref.read(friendsProvider.notifier).save(updated);
+      final notifier = ref.read(friendsProvider.notifier);
+      final saved = await notifier.save(updated);
+      if (_pendingAvatar != null) {
+        await notifier.setAvatar(saved, _pendingAvatar!);
+      } else if (_avatarRemoved && saved.avatar != null) {
+        await notifier.removeAvatar(saved);
+      }
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
@@ -129,6 +146,8 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
+            _avatarPicker(),
+            const SizedBox(height: 16),
             _field(
               _name,
               'Name',
@@ -191,6 +210,77 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
         ),
       ),
     );
+  }
+
+  Widget _avatarPicker() {
+    final existing = widget.friend == null || _avatarRemoved
+        ? null
+        : ref.watch(friendRepositoryProvider).avatarFile(widget.friend!);
+    final file = _pendingAvatar != null ? File(_pendingAvatar!) : existing;
+    final colors = Theme.of(context).colorScheme;
+    return Center(
+      child: Semantics(
+        button: true,
+        label: 'Profile picture',
+        child: GestureDetector(
+          onTap: () => _pickAvatar(hasOne: file != null),
+          child: Stack(
+            children: [
+              ValueListenableBuilder(
+                valueListenable: _name,
+                builder: (_, name, _) =>
+                    AvatarCircle(name: name.text, file: file, size: 96),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: colors.onSurface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.surface, width: 2),
+                  ),
+                  child: Icon(
+                    Icons.photo_camera_outlined,
+                    size: 16,
+                    color: colors.surface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAvatar({required bool hasOne}) async {
+    final choice = await showImageSourceSheet(
+      context,
+      removeLabel: hasOne ? 'Remove picture' : null,
+    );
+    if (choice == false) {
+      setState(() {
+        _pendingAvatar = null;
+        _avatarRemoved = true;
+      });
+      return;
+    }
+    if (choice is! ImageSource) return;
+    try {
+      final path = await ref.read(imagePickerProvider)(choice);
+      if (path == null || !mounted) return;
+      setState(() {
+        _pendingAvatar = path;
+        _avatarRemoved = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not pick a picture: $e')));
+    }
   }
 
   Widget _field(

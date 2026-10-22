@@ -54,6 +54,14 @@ class _MemoryRepository extends FriendRepository {
   );
 
   @override
+  Future<Friend> setAvatar(Friend friend, String sourcePath) =>
+      save(friend.copyWith(avatar: () => 'assets/$sourcePath'));
+
+  @override
+  Future<Friend> removeAvatar(Friend friend) =>
+      save(friend.copyWith(avatar: () => null));
+
+  @override
   Future<void> delete(Friend friend) async =>
       friends.removeWhere((f) => f.id == friend.id);
 }
@@ -170,7 +178,7 @@ void main() {
 
     await tester.tap(find.text('Marko'));
     await tester.pumpAndSettle();
-    expect(find.text('Never called'), findsOneWidget);
+    expect(find.text('– –'), findsOneWidget);
 
     await tester.tap(find.text('Called today'));
     await tester.pumpAndSettle();
@@ -349,7 +357,9 @@ void main() {
     expect(scale, closeTo(13, 0.01));
   });
 
-  testWidgets('options: sort, compact list, birthdays in list', (tester) async {
+  testWidgets('options: sort, compact list, detail under each name', (
+    tester,
+  ) async {
     final soon = DateTime.now().add(const Duration(days: 3));
     final mm = soon.month.toString().padLeft(2, '0');
     final dd = soon.day.toString().padLeft(2, '0');
@@ -367,11 +377,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     double y(String name) => tester.getTopLeft(find.text(name)).dy;
-
-    // Default: never-called Zoe is most urgent.
-    expect(y('Zoe'), lessThan(y('Adam')));
-    expect(find.textContaining('Birthday in 3d'), findsOneWidget);
-    final rowHeight = tester
+    double rowHeight() => tester
         .getSize(
           find
               .ancestor(of: find.text('Adam'), matching: find.byType(InkWell))
@@ -379,34 +385,46 @@ void main() {
         )
         .height;
 
-    await _openOptions(tester, find.text('Name'));
-    await tester.tap(find.text('Name'));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Compact list'),
-      -200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.ensureVisible(find.text('Compact list'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Compact list'));
-    await tester.tap(find.text('Upcoming birthdays in list'));
-    await tester.pumpAndSettle();
+    // Default: urgency order (never-called Zoe first), last call shown,
+    // with dashes for never called.
+    expect(y('Zoe'), lessThan(y('Adam')));
+    expect(find.text('– –'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
+    final normalHeight = rowHeight();
+
+    Future<void> pick(String label, {bool last = false}) async {
+      final f = last ? find.text(label).last : find.text(label);
+      await tester.scrollUntilVisible(
+        f,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(f);
+      await tester.pumpAndSettle();
+      await tester.tap(f);
+      await tester.pumpAndSettle();
+    }
+
+    await _openOptions(tester);
+    await pick('Compact list');
+    await pick('Name');
+    // 'Birthday' is both a sort option and a detail option; the detail
+    // row comes second.
+    await pick('Birthday', last: true);
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
     expect(y('Adam'), lessThan(y('Zoe')));
-    expect(find.textContaining('Birthday in 3d'), findsNothing);
-    expect(
-      tester
-          .getSize(
-            find
-                .ancestor(of: find.text('Adam'), matching: find.byType(InkWell))
-                .first,
-          )
-          .height,
-      lessThan(rowHeight),
-    );
+    expect(find.textContaining('in 3 days'), findsOneWidget);
+    expect(find.text('– –'), findsOneWidget, reason: 'Adam has no birthday');
+    expect(rowHeight(), lessThan(normalHeight));
+
+    await _openOptions(tester);
+    await pick('Nothing');
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('in 3 days'), findsNothing);
+    expect(find.text('– –'), findsNothing);
   });
 
   testWidgets('options: reminders ask permission and get scheduled', (
@@ -461,16 +479,28 @@ void main() {
     expect(find.text('Days before'), findsNothing);
   });
 
-  testWidgets('options: about shows version, vault and counts', (tester) async {
+  testWidgets('about page: version, data, privacy policy, licences', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _app(_MemoryRepository([const Friend(id: '1', name: 'Alice')])),
     );
     await tester.pumpAndSettle();
-    await _openOptions(tester, find.text('Licences'));
-    expect(find.text('FriendBase 0.3.0 (3)'), findsOneWidget);
+    await _openOptions(tester, find.text('About FriendBase'));
+    await tester.tap(find.text('About FriendBase'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Version 0.3.0 (3)'), findsOneWidget);
+    expect(find.text('Made by Jona Jožef Zeichen'), findsOneWidget);
     expect(find.text('/unused'), findsOneWidget);
     expect(find.text('1 friend'), findsOneWidget);
-    expect(find.text('Made by Jona Jožef Zeichen'), findsOneWidget);
+
+    await tester.tap(find.text('Privacy policy'));
+    await tester.pumpAndSettle();
+    expect(find.text('In short'), findsOneWidget);
+    expect(find.textContaining('does not collect'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Licences'));
     await tester.pumpAndSettle();
@@ -568,4 +598,35 @@ void main() {
       },
     );
   }
+
+  testWidgets('profile picture: pick when creating, remove when editing', (
+    tester,
+  ) async {
+    final repo = _MemoryRepository([]);
+    await tester.pumpWidget(_app(repo, pickedImage: 'me.jpg'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Mia');
+    await tester.tap(find.bySemanticsLabel('Profile picture'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove picture'), findsNothing);
+    await tester.tap(find.text('Choose from gallery'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(repo.friends.single.avatar, 'assets/me.jpg');
+
+    await tester.tap(find.text('Mia'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Profile picture'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove picture'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(repo.friends.single.avatar, isNull);
+  });
 }

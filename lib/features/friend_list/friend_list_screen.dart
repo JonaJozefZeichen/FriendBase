@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/call_status.dart';
 import '../../domain/friend.dart';
+import '../../domain/app_settings.dart';
+import '../../ui_kit/friend_avatar.dart';
 import '../../ui_kit/widgets.dart';
 import '../friend_detail/friend_detail_screen.dart';
 import '../friend_edit/friend_edit_screen.dart';
@@ -94,7 +96,7 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
                     itemBuilder: (_, i) => _FriendRow(
                       friend: visible[i],
                       compact: settings.compactList,
-                      showBirthday: settings.birthdaysInList,
+                      detail: settings.listDetail,
                     ),
                   ),
                 );
@@ -107,32 +109,26 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
   }
 }
 
-/// Birthdays this close show up on the row when enabled in Options.
-const _birthdayWindowDays = 14;
-
 class _FriendRow extends StatelessWidget {
   const _FriendRow({
     required this.friend,
     required this.compact,
-    required this.showBirthday,
+    required this.detail,
   });
 
   final Friend friend;
   final bool compact;
-  final bool showBirthday;
+  final ListDetail detail;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final status = CallStatus.of(friend);
-    final birthdayIn = friend.birthday?.daysUntil(DateTime.now());
-    final birthdaySoon =
-        showBirthday && birthdayIn != null && birthdayIn <= _birthdayWindowDays;
-    final subtitle = [
-      lastCallLabel(status.daysSince),
-      if (birthdaySoon)
-        birthdayIn == 0 ? 'Birthday today' : 'Birthday in ${birthdayIn}d',
-    ].join('  ·  ');
+    final subtitle = switch (detail) {
+      ListDetail.none => null,
+      ListDetail.lastCall => lastCallLabel(status.daysSince),
+      ListDetail.birthday => _birthdayLabel(friend),
+    };
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
@@ -148,7 +144,7 @@ class _FriendRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _Avatar(name: friend.name, size: compact ? 36 : 44),
+            FriendAvatar(friend: friend, size: compact ? 36 : 44),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -161,7 +157,7 @@ class _FriendRow extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (!compact || birthdaySoon)
+                  if (subtitle != null)
                     Text(
                       subtitle,
                       overflow: TextOverflow.ellipsis,
@@ -181,35 +177,17 @@ class _FriendRow extends StatelessWidget {
   }
 }
 
-/// A round placeholder with the friend's initials.
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, required this.size});
-
-  final String name;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final initials = name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((p) => p.isNotEmpty)
-        .take(2)
-        .map((p) => p.characters.first.toUpperCase())
-        .join();
-    return ExcludeSemantics(
-      child: CircleAvatar(
-        radius: size / 2,
-        backgroundColor: colors.surfaceContainerHigh,
-        foregroundColor: colors.onSurface,
-        child: Text(
-          initials,
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: size * 0.36),
-        ),
-      ),
-    );
-  }
+/// `29 Oct · in 7 days`, `Birthday today`, or `– –` if unknown.
+String _birthdayLabel(Friend friend) {
+  final birthday = friend.birthday;
+  if (birthday == null) return kNoValue;
+  final days = birthday.daysUntil(DateTime.now());
+  final date = shortDate(birthday.day, birthday.month);
+  return switch (days) {
+    0 => 'Birthday today',
+    1 => '$date · tomorrow',
+    _ => '$date · in $days days',
+  };
 }
 
 class _EmptyState extends StatelessWidget {

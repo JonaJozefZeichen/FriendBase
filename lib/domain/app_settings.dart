@@ -6,6 +6,9 @@ enum AppFont { system, serif, readable, mono }
 
 enum ListSort { urgency, name, birthday }
 
+/// The small line under each name in the friend list.
+enum ListDetail { lastCall, birthday, none }
+
 /// Text size steps offered in Options.
 const kTextScales = {'S': 0.9, 'M': 1.0, 'L': 1.15, 'XL': 1.3};
 
@@ -19,7 +22,7 @@ class AppSettings {
     this.font = AppFont.system,
     this.textScale = 1.0,
     this.compactList = false,
-    this.birthdaysInList = true,
+    this.listDetail = ListDetail.lastCall,
     this.sort = ListSort.urgency,
     this.remindBirthdays = false,
     this.birthdayDaysBefore = 3,
@@ -36,8 +39,7 @@ class AppSettings {
   final double textScale;
   final bool compactList;
 
-  /// Show upcoming birthdays (≤ 14 days) on list rows.
-  final bool birthdaysInList;
+  final ListDetail listDetail;
   final ListSort sort;
   final bool remindBirthdays;
   final int birthdayDaysBefore;
@@ -58,7 +60,7 @@ class AppSettings {
     AppFont? font,
     double? textScale,
     bool? compactList,
-    bool? birthdaysInList,
+    ListDetail? listDetail,
     ListSort? sort,
     bool? remindBirthdays,
     int? birthdayDaysBefore,
@@ -72,7 +74,7 @@ class AppSettings {
       font: font ?? this.font,
       textScale: textScale ?? this.textScale,
       compactList: compactList ?? this.compactList,
-      birthdaysInList: birthdaysInList ?? this.birthdaysInList,
+      listDetail: listDetail ?? this.listDetail,
       sort: sort ?? this.sort,
       remindBirthdays: remindBirthdays ?? this.remindBirthdays,
       birthdayDaysBefore: birthdayDaysBefore ?? this.birthdayDaysBefore,
@@ -92,7 +94,7 @@ class AppSettings {
     'font': font.name,
     'text_scale': textScale,
     'compact_list': compactList,
-    'birthdays_in_list': birthdaysInList,
+    'list_detail': listDetail.name,
     'sort': sort.name,
     'remind_birthdays': remindBirthdays,
     'birthday_days_before': birthdayDaysBefore,
@@ -126,7 +128,8 @@ class AppSettings {
           ? scale.toDouble()
           : d.textScale,
       compactList: pick('compact_list', d.compactList),
-      birthdaysInList: pick('birthdays_in_list', d.birthdaysInList),
+      listDetail:
+          ListDetail.values.asNameMap()[json['list_detail']] ?? d.listDetail,
       sort: ListSort.values.asNameMap()[json['sort']] ?? d.sort,
       remindBirthdays: pick('remind_birthdays', d.remindBirthdays),
       birthdayDaysBefore: kBirthdayDaysBefore.contains(days)

@@ -7,6 +7,8 @@ import '../../app/providers.dart';
 import '../../domain/call_status.dart';
 import '../../domain/friend.dart';
 import '../../ui_kit/caption_dialog.dart';
+import '../../ui_kit/friend_avatar.dart';
+import '../../ui_kit/image_source_sheet.dart';
 import '../../ui_kit/widgets.dart';
 import '../friend_edit/friend_edit_screen.dart';
 import '../image_view/image_view_screen.dart';
@@ -87,21 +89,6 @@ class FriendDetailScreen extends ConsumerWidget {
   }
 }
 
-const _months = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
 /// The info card. Its top-left corner sits under the floating back button.
 class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.friend});
@@ -123,13 +110,34 @@ class _InfoCard extends StatelessWidget {
           children: [
             // Header row clears the back button overlapping the corner.
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(width: 32),
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: FriendAvatar(friend: friend, size: 56),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    friend.name,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          friend.name,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (friend.nickname != null)
+                          Text(
+                            friend.nickname!,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -144,15 +152,7 @@ class _InfoCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (friend.nickname != null)
-              Padding(
-                padding: const EdgeInsets.only(left: 32),
-                child: Text(
-                  friend.nickname!,
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             for (final phone in friend.phones)
               _InfoRow(
                 icon: Icons.phone_outlined,
@@ -171,8 +171,7 @@ class _InfoCard extends StatelessWidget {
               _InfoRow(
                 icon: Icons.cake_outlined,
                 text:
-                    '${birthday.day} ${_months[birthday.month - 1]}'
-                    '${birthday.year == null ? '' : ' ${birthday.year}'}'
+                    '${shortDate(birthday.day, birthday.month, birthday.year)}'
                     '  ·  ${_birthdayHint(birthday.daysUntil(today), birthday.turningAge(today))}',
               ),
             const SizedBox(height: 12),
@@ -309,8 +308,7 @@ class _CallSection extends ConsumerWidget {
   }
 
   static String _shortDate(DateTime t) =>
-      '${t.day} ${_months[t.month - 1]}'
-      '${t.year == DateTime.now().year ? '' : ' ${t.year}'}';
+      shortDate(t.day, t.month, t.year == DateTime.now().year ? null : t.year);
 
   Future<void> _logCall(
     BuildContext context,
@@ -416,36 +414,8 @@ class _ImageStrip extends ConsumerWidget {
   }
 
   Future<void> _addImage(BuildContext context, WidgetRef ref) async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery'),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Take a photo'),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (source == null) return;
+    final source = await showImageSourceSheet(context);
+    if (source is! ImageSource) return;
     final notifier = ref.read(friendsProvider.notifier);
     try {
       final path = await ref.read(imagePickerProvider)(source);

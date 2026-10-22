@@ -23,14 +23,21 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final card = Container(
+    // A Material (not a coloured Container) so ListTiles and InkWells
+    // inside can paint their ripples on it.
+    final card = SizedBox(
       width: double.infinity,
-      padding: padding,
-      decoration: BoxDecoration(
+      child: Material(
         color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(kRadius),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: padding,
+          child: fill
+              ? Align(alignment: Alignment.topLeft, child: child)
+              : child,
+        ),
       ),
-      child: fill ? Align(alignment: Alignment.topLeft, child: child) : child,
     );
     if (title == null) return card;
     return Column(
@@ -258,10 +265,32 @@ String callLabel(CallState state) => switch (state) {
   CallState.overdue => 'Overdue',
 };
 
-/// `Today`, `Yesterday`, `18 days ago`, or `Never called`.
+/// Shown where a date would be when there is none, e.g. never called.
+const kNoValue = '– –';
+
+/// `Today`, `Yesterday`, `18 days ago`, or `– –` if never called.
 String lastCallLabel(int? days) => switch (days) {
-  null => 'Never called',
+  null => kNoValue,
   0 => 'Today',
   1 => 'Yesterday',
   _ => '$days days ago',
 };
+
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/// `29 Oct`, or `29 Oct 1994` when [year] is given.
+String shortDate(int day, int month, [int? year]) =>
+    '$day ${_months[month - 1]}${year == null ? '' : ' $year'}';

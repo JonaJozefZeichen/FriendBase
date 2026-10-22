@@ -32,7 +32,7 @@ void main() {
       font: AppFont.serif,
       textScale: 1.3,
       compactList: true,
-      birthdaysInList: false,
+      listDetail: ListDetail.birthday,
       sort: ListSort.birthday,
       remindBirthdays: true,
       birthdayDaysBefore: 7,
