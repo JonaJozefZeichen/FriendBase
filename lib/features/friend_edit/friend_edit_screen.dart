@@ -9,6 +9,8 @@ import '../../domain/birthday.dart';
 import '../../domain/call_status.dart';
 import '../../domain/friend.dart';
 import '../../domain/ulid.dart';
+import '../../domain/date_format.dart';
+import '../../ui_kit/birthday_picker.dart';
 import '../../ui_kit/friend_avatar.dart';
 import '../../ui_kit/image_source_sheet.dart';
 
@@ -156,17 +158,7 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
                   (v ?? '').trim().isEmpty ? 'Please enter a name' : null,
             ),
             _field(_nickname, 'Nickname', icon: Icons.badge_outlined),
-            _field(
-              _birthday,
-              'Birthday',
-              icon: Icons.cake_outlined,
-              helper: 'YYYY-MM-DD, or --MM-DD without the year',
-              keyboard: TextInputType.datetime,
-              validator: (v) =>
-                  (v ?? '').trim().isEmpty || Birthday.tryParse(v) != null
-                  ? null
-                  : 'Use 1994-03-12, or --03-12 without the year',
-            ),
+            _birthdayField(),
             _field(
               _phones,
               'Phone numbers',
@@ -207,6 +199,47 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Read-only; tapping opens the day · month · year wheels. [_birthday]
+  /// holds the value as stored in the file.
+  Widget _birthdayField() {
+    final raw = _birthday.text.trim();
+    final birthday = Birthday.tryParse(raw);
+    final style = ref.watch(settingsProvider.select((s) => s.dateStyle));
+    final shown = birthday == null
+        ? raw // Unparseable hand-edited value: show it untouched.
+        : formatDay(
+            style,
+            day: birthday.day,
+            month: birthday.month,
+            year: birthday.year,
+          );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () async {
+          final picked = await showBirthdayPicker(context, initial: birthday);
+          if (picked != null) setState(() => _birthday.text = picked);
+        },
+        child: InputDecorator(
+          isEmpty: shown.isEmpty,
+          decoration: InputDecoration(
+            labelText: 'Birthday',
+            prefixIcon: const Icon(Icons.cake_outlined),
+            suffixIcon: shown.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear birthday',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => setState(_birthday.clear),
+                  ),
+          ),
+          child: Text(shown.isEmpty ? ' ' : shown),
         ),
       ),
     );

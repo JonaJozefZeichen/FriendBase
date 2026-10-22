@@ -1,6 +1,7 @@
 import 'app_settings.dart';
 import 'birthday.dart';
 import 'call_status.dart';
+import 'date_format.dart';
 import 'friend.dart';
 
 /// iOS keeps at most 64 pending notifications per app; leave some headroom.
@@ -67,7 +68,9 @@ List<PlannedReminder> planReminders(
           body: switch (days) {
             0 => 'Today$age',
             1 => 'Tomorrow$age',
-            _ => 'In $days days (${formatDate(occurrence)})$age',
+            _ =>
+              'In $days days '
+                  '(${displayDate(settings.dateStyle, occurrence, withYear: false)})$age',
           },
         ));
       }

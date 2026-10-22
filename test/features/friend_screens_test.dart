@@ -154,7 +154,13 @@ void main() {
     final recentY = tester.getTopLeft(find.text('Rita')).dy;
     final overdueY = tester.getTopLeft(find.text('Otto')).dy;
     expect(overdueY, lessThan(recentY));
-    expect(find.text('Overdue'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.label == 'Overdue',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Today'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'rit');
     await tester.pumpAndSettle();
@@ -180,7 +186,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('– –'), findsOneWidget);
 
-    await tester.tap(find.text('Called today'));
+    await tester.tap(find.byTooltip('Called today'));
     await tester.pumpAndSettle();
     expect(find.text('Today'), findsOneWidget);
     expect(repo.friends.single.calls, hasLength(1));
@@ -190,20 +196,79 @@ void main() {
     expect(repo.friends.single.calls, isEmpty);
   });
 
-  testWidgets('birthday validation', (tester) async {
-    await tester.pumpWidget(_app(_MemoryRepository([])));
+  testWidgets('birthday picker: unknown year, with year, clear', (
+    tester,
+  ) async {
+    final repo = _MemoryRepository([]);
+    await tester.pumpWidget(_app(repo));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Mia');
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'A');
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Birthday'),
-      '12.03.1994',
-    );
+    Future<void> openPicker() async {
+      // The label is drawn by the field's decoration; the tap still lands
+      // on the field around it.
+      await tester.tap(find.text('Birthday'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> spin(String from, double rows) async {
+      await tester.drag(find.text(from).last, Offset(0, -40 * rows));
+      await tester.pumpAndSettle();
+    }
+
+    // Defaults: 1 January, year unknown. Pick 12 March.
+    await openPicker();
+    await spin('1', 11);
+    await spin('January', 2);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('12.03.'), findsOneWidget);
+
+    // Now add a year: the first year after "unknown" is the current year.
+    await openPicker();
+    await spin('– –', 1);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    final year = DateTime.now().year;
+    expect(find.text('12.03.$year'), findsOneWidget);
+
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Use 1994-03-12'), findsOneWidget);
+    expect(repo.friends.single.birthdayRaw, '$year-03-12');
+
+    // Clearing from the editor removes it again.
+    await tester.tap(find.text('Mia'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Clear birthday'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(repo.friends.single.birthdayRaw, isNull);
+  });
+
+  testWidgets('date format applies to the friend view', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([
+          const Friend(
+            id: '1',
+            name: 'Anna',
+            folder: 'a',
+            birthdayRaw: '1994-10-29',
+          ),
+        ]),
+        initial: const AppSettings(dateStyle: DateStyle.american),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anna'));
+    await tester.pumpAndSettle();
+    expect(find.text('10/29/1994'), findsOneWidget);
+    expect(find.textContaining('turns'), findsOneWidget);
   });
 
   testWidgets('friend view: back button, info, images and notes', (
@@ -233,7 +298,7 @@ void main() {
     expect(find.text('## Food\npho'), findsOneWidget);
 
     // Order top to bottom: info box, images, notes.
-    final callY = tester.getTopLeft(find.text('Called today')).dy;
+    final callY = tester.getTopLeft(find.byTooltip('Called today')).dy;
     final addY = tester.getTopLeft(find.byTooltip('Add image')).dy;
     final notesY = tester.getTopLeft(find.text('## Food\npho')).dy;
     expect(callY, lessThan(addY));
@@ -415,7 +480,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(y('Adam'), lessThan(y('Zoe')));
-    expect(find.textContaining('in 3 days'), findsOneWidget);
+    expect(find.text('in 3d'), findsOneWidget);
     expect(find.text('– –'), findsOneWidget, reason: 'Adam has no birthday');
     expect(rowHeight(), lessThan(normalHeight));
 
@@ -423,7 +488,7 @@ void main() {
     await pick('Nothing');
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('in 3 days'), findsNothing);
+    expect(find.text('in 3d'), findsNothing);
     expect(find.text('– –'), findsNothing);
   });
 

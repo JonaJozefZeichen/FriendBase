@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../domain/app_settings.dart';
+import '../../domain/date_format.dart';
 import '../../ui_kit/widgets.dart';
 import '../about/about_screen.dart';
 
@@ -61,6 +62,20 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                   selected: settings.textScale,
                   onSelected: (v) => update((s) => s.copyWith(textScale: v)),
+                ),
+                const SizedBox(height: 16),
+                const _Label('Date format'),
+                SegmentedChoice<DateStyle>(
+                  options: [
+                    for (final style in DateStyle.values)
+                      (
+                        style,
+                        formatDay(style, day: 29, month: 10, year: 1994),
+                        null,
+                      ),
+                  ],
+                  selected: settings.dateStyle,
+                  onSelected: (v) => update((s) => s.copyWith(dateStyle: v)),
                 ),
                 const SizedBox(height: 8),
                 ToggleRow(

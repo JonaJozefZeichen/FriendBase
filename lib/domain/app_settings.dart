@@ -6,6 +6,9 @@ enum AppFont { system, serif, readable, mono }
 
 enum ListSort { urgency, name, birthday }
 
+/// How dates are shown: 29.10.1994, 10/29/1994 or 1994-10-29.
+enum DateStyle { european, american, iso }
+
 /// The small line under each name in the friend list.
 enum ListDetail { lastCall, birthday, none }
 
@@ -23,6 +26,7 @@ class AppSettings {
     this.textScale = 1.0,
     this.compactList = false,
     this.listDetail = ListDetail.lastCall,
+    this.dateStyle = DateStyle.european,
     this.sort = ListSort.urgency,
     this.remindBirthdays = false,
     this.birthdayDaysBefore = 3,
@@ -40,6 +44,7 @@ class AppSettings {
   final bool compactList;
 
   final ListDetail listDetail;
+  final DateStyle dateStyle;
   final ListSort sort;
   final bool remindBirthdays;
   final int birthdayDaysBefore;
@@ -61,6 +66,7 @@ class AppSettings {
     double? textScale,
     bool? compactList,
     ListDetail? listDetail,
+    DateStyle? dateStyle,
     ListSort? sort,
     bool? remindBirthdays,
     int? birthdayDaysBefore,
@@ -75,6 +81,7 @@ class AppSettings {
       textScale: textScale ?? this.textScale,
       compactList: compactList ?? this.compactList,
       listDetail: listDetail ?? this.listDetail,
+      dateStyle: dateStyle ?? this.dateStyle,
       sort: sort ?? this.sort,
       remindBirthdays: remindBirthdays ?? this.remindBirthdays,
       birthdayDaysBefore: birthdayDaysBefore ?? this.birthdayDaysBefore,
@@ -95,6 +102,7 @@ class AppSettings {
     'text_scale': textScale,
     'compact_list': compactList,
     'list_detail': listDetail.name,
+    'date_style': dateStyle.name,
     'sort': sort.name,
     'remind_birthdays': remindBirthdays,
     'birthday_days_before': birthdayDaysBefore,
@@ -130,6 +138,8 @@ class AppSettings {
       compactList: pick('compact_list', d.compactList),
       listDetail:
           ListDetail.values.asNameMap()[json['list_detail']] ?? d.listDetail,
+      dateStyle:
+          DateStyle.values.asNameMap()[json['date_style']] ?? d.dateStyle,
       sort: ListSort.values.asNameMap()[json['sort']] ?? d.sort,
       remindBirthdays: pick('remind_birthdays', d.remindBirthdays),
       birthdayDaysBefore: kBirthdayDaysBefore.contains(days)

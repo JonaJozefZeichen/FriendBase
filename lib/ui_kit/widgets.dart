@@ -275,22 +275,3 @@ String lastCallLabel(int? days) => switch (days) {
   1 => 'Yesterday',
   _ => '$days days ago',
 };
-
-const _months = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-/// `29 Oct`, or `29 Oct 1994` when [year] is given.
-String shortDate(int day, int month, [int? year]) =>
-    '$day ${_months[month - 1]}${year == null ? '' : ' $year'}';

@@ -33,6 +33,7 @@ void main() {
       textScale: 1.3,
       compactList: true,
       listDetail: ListDetail.birthday,
+      dateStyle: DateStyle.iso,
       sort: ListSort.birthday,
       remindBirthdays: true,
       birthdayDaysBefore: 7,

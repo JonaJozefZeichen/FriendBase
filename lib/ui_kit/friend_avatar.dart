@@ -8,30 +8,46 @@ import '../domain/friend.dart';
 
 /// The friend's profile picture, or their initials if they have none.
 class FriendAvatar extends ConsumerWidget {
-  const FriendAvatar({super.key, required this.friend, this.size = 44});
+  const FriendAvatar({
+    super.key,
+    required this.friend,
+    this.size = 44,
+    this.square = false,
+  });
 
   final Friend friend;
   final double size;
 
+  /// A rounded square instead of a circle.
+  final bool square;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final file = ref.watch(friendRepositoryProvider).avatarFile(friend);
-    return AvatarCircle(name: friend.name, file: file, size: size);
+    return AvatarCircle(
+      name: friend.name,
+      file: file,
+      size: size,
+      square: square,
+    );
   }
 }
 
-/// A round picture from [file], falling back to initials of [name].
+/// A round (or rounded-square) picture from [file], falling back to
+/// initials of [name].
 class AvatarCircle extends StatelessWidget {
   const AvatarCircle({
     super.key,
     required this.name,
     this.file,
     this.size = 44,
+    this.square = false,
   });
 
   final String name;
   final File? file;
   final double size;
+  final bool square;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +69,8 @@ class AvatarCircle extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: colors.surfaceContainerHigh,
-          shape: BoxShape.circle,
+          shape: square ? BoxShape.rectangle : BoxShape.circle,
+          borderRadius: square ? BorderRadius.circular(size / 4) : null,
         ),
         child: file == null
             ? initials

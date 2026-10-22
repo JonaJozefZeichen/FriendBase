@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/call_status.dart';
+import '../../domain/date_format.dart';
 import '../../domain/friend.dart';
 import '../../domain/app_settings.dart';
 import '../../ui_kit/friend_avatar.dart';
@@ -97,6 +98,7 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
                       friend: visible[i],
                       compact: settings.compactList,
                       detail: settings.listDetail,
+                      dateStyle: settings.dateStyle,
                     ),
                   ),
                 );
@@ -114,22 +116,17 @@ class _FriendRow extends StatelessWidget {
     required this.friend,
     required this.compact,
     required this.detail,
+    required this.dateStyle,
   });
 
   final Friend friend;
   final bool compact;
   final ListDetail detail;
+  final DateStyle dateStyle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final status = CallStatus.of(friend);
-    final subtitle = switch (detail) {
-      ListDetail.none => null,
-      ListDetail.lastCall => lastCallLabel(status.daysSince),
-      ListDetail.birthday => _birthdayLabel(friend),
-    };
-
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () => Navigator.of(context).push(
@@ -147,29 +144,23 @@ class _FriendRow extends StatelessWidget {
             FriendAvatar(friend: friend, size: compact ? 36 : 44),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    friend.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
+              child: Text(
+                friend.name,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: 8),
-            StatusPill(status.state),
+            switch (detail) {
+              ListDetail.none => const SizedBox.shrink(),
+              ListDetail.lastCall => _LastCallTrailing(friend: friend),
+              ListDetail.birthday => _BirthdayTrailing(
+                friend: friend,
+                dateStyle: dateStyle,
+              ),
+            },
           ],
         ),
       ),
@@ -177,17 +168,89 @@ class _FriendRow extends StatelessWidget {
   }
 }
 
-/// `29 Oct · in 7 days`, `Birthday today`, or `– –` if unknown.
-String _birthdayLabel(Friend friend) {
-  final birthday = friend.birthday;
-  if (birthday == null) return kNoValue;
-  final days = birthday.daysUntil(DateTime.now());
-  final date = shortDate(birthday.day, birthday.month);
-  return switch (days) {
-    0 => 'Birthday today',
-    1 => '$date · tomorrow',
-    _ => '$date · in $days days',
-  };
+/// `18d`, `Today` or `– –`. Bold when due; overdue also gets a dot, so
+/// urgency stays visible without a status pill.
+class _LastCallTrailing extends StatelessWidget {
+  const _LastCallTrailing({required this.friend});
+
+  final Friend friend;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final status = CallStatus.of(friend);
+    final days = status.daysSince;
+    final urgent =
+        status.state == CallState.due || status.state == CallState.overdue;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (status.state == CallState.overdue)
+          Semantics(
+            label: 'Overdue',
+            child: Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: colors.onSurface,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        Text(
+          switch (days) {
+            null => kNoValue,
+            0 => 'Today',
+            _ => '${days}d',
+          },
+          style: TextStyle(
+            fontWeight: urgent ? FontWeight.w700 : FontWeight.w400,
+            color: urgent ? colors.onSurface : colors.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The next birthday's date, with `in 7d` underneath; `– –` if unknown.
+class _BirthdayTrailing extends StatelessWidget {
+  const _BirthdayTrailing({required this.friend, required this.dateStyle});
+
+  final Friend friend;
+  final DateStyle dateStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final birthday = friend.birthday;
+    if (birthday == null) {
+      return Text(kNoValue, style: TextStyle(color: muted));
+    }
+    final days = birthday.daysUntil(DateTime.now());
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          formatDay(dateStyle, day: birthday.day, month: birthday.month),
+          style: TextStyle(color: muted),
+        ),
+        Text(
+          switch (days) {
+            0 => 'today',
+            1 => 'tomorrow',
+            _ => 'in ${days}d',
+          },
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: muted.withValues(alpha: 0.75),
+            fontWeight: days <= 1 ? FontWeight.w700 : null,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _EmptyState extends StatelessWidget {

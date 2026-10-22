@@ -4,7 +4,9 @@ import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/providers.dart';
+import '../../domain/app_settings.dart';
 import '../../domain/call_status.dart';
+import '../../domain/date_format.dart';
 import '../../domain/friend.dart';
 import '../../ui_kit/caption_dialog.dart';
 import '../../ui_kit/friend_avatar.dart';
@@ -90,16 +92,17 @@ class FriendDetailScreen extends ConsumerWidget {
 }
 
 /// The info card. Its top-left corner sits under the floating back button.
-class _InfoCard extends StatelessWidget {
+class _InfoCard extends ConsumerWidget {
   const _InfoCard({required this.friend});
 
   final Friend friend;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final birthday = friend.birthday;
     final today = DateTime.now();
+    final dateStyle = ref.watch(settingsProvider.select((s) => s.dateStyle));
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 28, 16, 0),
@@ -115,7 +118,7 @@ class _InfoCard extends StatelessWidget {
                 const SizedBox(width: 32),
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: FriendAvatar(friend: friend, size: 56),
+                  child: FriendAvatar(friend: friend, size: 56, square: true),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -170,9 +173,16 @@ class _InfoCard extends StatelessWidget {
             if (birthday != null)
               _InfoRow(
                 icon: Icons.cake_outlined,
-                text:
-                    '${shortDate(birthday.day, birthday.month, birthday.year)}'
-                    '  ·  ${_birthdayHint(birthday.daysUntil(today), birthday.turningAge(today))}',
+                text: formatDay(
+                  dateStyle,
+                  day: birthday.day,
+                  month: birthday.month,
+                  year: birthday.year,
+                ),
+                note: _birthdayHint(
+                  birthday.daysUntil(today),
+                  birthday.turningAge(today),
+                ),
               ),
             const SizedBox(height: 12),
             Padding(
@@ -186,7 +196,7 @@ class _InfoCard extends StatelessWidget {
   }
 
   static String _birthdayHint(int days, int? age) {
-    final turns = age == null ? '' : ', turns $age';
+    final turns = age == null ? '' : ' · turns $age';
     return switch (days) {
       0 => 'today$turns',
       1 => 'tomorrow$turns',
@@ -196,10 +206,18 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.text, this.onTap});
+  const _InfoRow({
+    required this.icon,
+    required this.text,
+    this.note,
+    this.onTap,
+  });
 
   final IconData icon;
   final String text;
+
+  /// A smaller, paler side note under [text].
+  final String? note;
   final VoidCallback? onTap;
 
   @override
@@ -216,11 +234,25 @@ class _InfoRow extends StatelessWidget {
             Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                text,
-                style: onTap == null
-                    ? null
-                    : const TextStyle(fontWeight: FontWeight.w500),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    text,
+                    style: onTap == null
+                        ? null
+                        : const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  if (note != null)
+                    Text(
+                      note!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.8,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
@@ -240,6 +272,7 @@ class _CallSection extends ConsumerWidget {
     final theme = Theme.of(context);
     final status = CallStatus.of(friend);
     final history = friend.callTimes.reversed.take(3).toList();
+    final dateStyle = ref.watch(settingsProvider.select((s) => s.dateStyle));
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -278,37 +311,32 @@ class _CallSection extends ConsumerWidget {
                 ),
               ),
               StatusPill(status.state),
+              const SizedBox(width: 12),
+              _CalledButton(
+                onTap: () => _logCall(context, ref, DateTime.now()),
+                onLongPress: () => _logPastCall(context, ref),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => _logCall(context, ref, DateTime.now()),
-            onLongPress: () => _logPastCall(context, ref),
-            icon: const Icon(Icons.call_rounded),
-            label: const Text('Called today'),
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
           Text(
-            'Long-press to log an earlier call',
-            textAlign: TextAlign.center,
+            [
+              'Tap the dot after a call · hold it to pick a date',
+              if (history.isNotEmpty)
+                'Recent: ${history.map((t) => _shortDate(dateStyle, t)).join(', ')}',
+            ].join('\n'),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
+              height: 1.5,
             ),
           ),
-          if (history.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              'Recent: ${history.map(_shortDate).join(', ')}',
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
         ],
       ),
     );
   }
 
-  static String _shortDate(DateTime t) =>
-      shortDate(t.day, t.month, t.year == DateTime.now().year ? null : t.year);
+  static String _shortDate(DateStyle style, DateTime t) =>
+      displayDate(style, t, withYear: t.year != DateTime.now().year);
 
   Future<void> _logCall(
     BuildContext context,
@@ -316,6 +344,7 @@ class _CallSection extends ConsumerWidget {
     DateTime at,
   ) async {
     final notifier = ref.read(friendsProvider.notifier);
+    final style = ref.read(settingsProvider).dateStyle;
     final updated = await notifier.logCall(friend, at);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context)
@@ -323,7 +352,8 @@ class _CallSection extends ConsumerWidget {
       ..showSnackBar(
         SnackBar(
           content: Text(
-            'Call logged: ${formatCallTime(at).replaceFirst('T', ' ')}',
+            'Call logged: ${displayDate(style, at)} '
+            '${formatCallTime(at).substring(11)}',
           ),
           action: SnackBarAction(
             label: 'Undo',
@@ -468,6 +498,50 @@ class _AddTile extends StatelessWidget {
             child: Icon(
               Icons.add_photo_alternate_outlined,
               color: colors.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The round "I called them" button: just a dot, no text.
+class _CalledButton extends StatelessWidget {
+  const _CalledButton({required this.onTap, required this.onLongPress});
+
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: 'Called today',
+      child: Semantics(
+        button: true,
+        label: 'Called today',
+        hint: 'Hold to log an earlier call',
+        excludeSemantics: true,
+        child: Material(
+          color: colors.onSurface,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            onLongPress: onLongPress,
+            child: SizedBox.square(
+              dimension: 52,
+              child: Center(
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
             ),
           ),
         ),

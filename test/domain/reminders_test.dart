@@ -30,7 +30,13 @@ void main() {
       ).single;
       expect(r.when, DateTime(2026, 10, 26, 9));
       expect(r.title, "Anna's birthday");
-      expect(r.body, 'In 3 days (2026-10-29) — turns 32');
+      expect(r.body, 'In 3 days (29.10.) — turns 32');
+      final us = planReminders(
+        [friend('Anna', birthday: '1994-10-29')],
+        both.copyWith(dateStyle: DateStyle.american),
+        now: now,
+      ).single;
+      expect(us.body, 'In 3 days (10/29) — turns 32');
     });
 
     test('1 day before says tomorrow; no age without a year', () {
