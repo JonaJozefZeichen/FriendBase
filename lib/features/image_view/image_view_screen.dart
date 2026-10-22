@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../domain/friend.dart';
 import '../../ui_kit/widgets.dart';
 import '../../l10n/l10n.dart';
+import '../../ui_kit/ledger.dart';
 import '../../ui_kit/caption_dialog.dart';
 
 /// A friend's images full screen: swipe or use the arrows to move between them,
@@ -48,101 +49,105 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
     final index = images.isEmpty ? 0 : _index.clamp(0, images.length - 1);
 
     // Uses the app's chosen theme, like every other screen.
-    return Scaffold(
-      body: Stack(
-        children: [
-          if (friend == null || images.isEmpty)
-            Center(child: Text(context.l10n.noImages))
-          else
-            PageView.builder(
-              controller: _pages,
-              itemCount: images.length,
-              onPageChanged: (i) => setState(() => _index = i),
-              itemBuilder: (_, i) {
-                final file = repo.imageFile(friend, images[i]);
-                return InteractiveViewer(
-                  maxScale: 4,
-                  child: Center(
-                    child: file == null
-                        ? Text(context.l10n.imagePathNotAllowed)
-                        : Image.file(
-                            file,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) =>
-                                Text(context.l10n.missingFile(images[i].file)),
-                          ),
-                  ),
-                );
-              },
-            ),
-          if (index > 0)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: FloatingRoundButton(
-                  icon: Icons.chevron_left_rounded,
-                  tooltip: context.l10n.previousImage,
-                  onPressed: () => _go(index - 1),
-                ),
-              ),
-            ),
-          if (index < images.length - 1)
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FloatingRoundButton(
-                  icon: Icons.chevron_right_rounded,
-                  tooltip: context.l10n.nextImage,
-                  onPressed: () => _go(index + 1),
-                ),
-              ),
-            ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  const BackRoundButton(),
-                  Expanded(
-                    // heightFactor keeps this row as tall as its buttons;
-                    // a plain Center would stretch it to the full screen.
+    return PaperBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            if (friend == null || images.isEmpty)
+              Center(child: Text(context.l10n.noImages))
+            else
+              PageView.builder(
+                controller: _pages,
+                itemCount: images.length,
+                onPageChanged: (i) => setState(() => _index = i),
+                itemBuilder: (_, i) {
+                  final file = repo.imageFile(friend, images[i]);
+                  return InteractiveViewer(
+                    maxScale: 4,
                     child: Center(
-                      heightFactor: 1,
-                      child: images.isEmpty
-                          ? const SizedBox.shrink()
-                          : _Pill('${index + 1} / ${images.length}'),
+                      child: file == null
+                          ? Text(context.l10n.imagePathNotAllowed)
+                          : Image.file(
+                              file,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) => Text(
+                                context.l10n.missingFile(images[i].file),
+                              ),
+                            ),
                     ),
-                  ),
-                  if (friend != null && images.isNotEmpty)
-                    FloatingRoundButton(
-                      icon: Icons.delete_outline_rounded,
-                      tooltip: context.l10n.deleteImage,
-                      onPressed: () =>
-                          _confirmRemove(context, friend, images[index]),
-                    )
-                  else
-                    const SizedBox(width: 44),
-                ],
+                  );
+                },
               ),
-            ),
-          ),
-          if (friend != null && images.isNotEmpty)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 0,
-              child: SafeArea(
-                top: false,
-                minimum: const EdgeInsets.only(bottom: 16),
-                child: _CaptionCard(
-                  caption: images[index].caption,
-                  onTap: () => _editCaption(context, friend, images[index]),
+            if (index > 0)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: FloatingRoundButton(
+                    icon: Icons.chevron_left_rounded,
+                    tooltip: context.l10n.previousImage,
+                    onPressed: () => _go(index - 1),
+                  ),
+                ),
+              ),
+            if (index < images.length - 1)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FloatingRoundButton(
+                    icon: Icons.chevron_right_rounded,
+                    tooltip: context.l10n.nextImage,
+                    onPressed: () => _go(index + 1),
+                  ),
+                ),
+              ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    const BackRoundButton(),
+                    Expanded(
+                      // heightFactor keeps this row as tall as its buttons;
+                      // a plain Center would stretch it to the full screen.
+                      child: Center(
+                        heightFactor: 1,
+                        child: images.isEmpty
+                            ? const SizedBox.shrink()
+                            : _Pill('${index + 1} / ${images.length}'),
+                      ),
+                    ),
+                    if (friend != null && images.isNotEmpty)
+                      FloatingRoundButton(
+                        icon: Icons.delete_outline_rounded,
+                        tooltip: context.l10n.deleteImage,
+                        onPressed: () =>
+                            _confirmRemove(context, friend, images[index]),
+                      )
+                    else
+                      const SizedBox(width: 44),
+                  ],
                 ),
               ),
             ),
-        ],
+            if (friend != null && images.isNotEmpty)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 0,
+                child: SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.only(bottom: 16),
+                  child: _CaptionCard(
+                    caption: images[index].caption,
+                    onTap: () => _editCaption(context, friend, images[index]),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

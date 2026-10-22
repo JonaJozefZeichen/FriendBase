@@ -1,8 +1,19 @@
-/// Colour themes. `system` follows the phone's light/dark setting.
-enum AppTheme { system, light, dark, rose, mint, sky, lavender }
+/// Ledger papers. `system` is Cream by day and Ink at night.
+enum AppTheme { system, cream, kraft, blue, ink }
 
-/// Font families. `system` is SF Pro on iOS and Roboto on Android.
-enum AppFont { system, serif, readable, mono }
+/// Font families. `ledger` pairs a serif with a monospace for numbers;
+/// `system` is SF Pro on iOS and Roboto on Android.
+enum AppFont { ledger, system, serif, readable, mono }
+
+/// Colour themes before the Ledger design (v1.1), mapped to papers.
+const _legacyThemes = {
+  'light': AppTheme.cream,
+  'rose': AppTheme.cream,
+  'lavender': AppTheme.cream,
+  'dark': AppTheme.ink,
+  'mint': AppTheme.blue,
+  'sky': AppTheme.blue,
+};
 
 enum ListSort { urgency, name, birthday }
 
@@ -26,7 +37,7 @@ const kBirthdayDaysBefore = [1, 3, 7];
 class AppSettings {
   const AppSettings({
     this.theme = AppTheme.system,
-    this.font = AppFont.system,
+    this.font = AppFont.ledger,
     this.textScale = 1.0,
     this.compactList = false,
     this.listDetail = ListDetail.lastCall,
@@ -105,6 +116,7 @@ class AppSettings {
       '${reminderMinute.toString().padLeft(2, '0')}';
 
   Map<String, Object?> toJson() => {
+    'design': 'ledger',
     'theme': theme.name,
     'font': font.name,
     'text_scale': textScale,
@@ -139,8 +151,15 @@ class AppSettings {
         hour != null && minute != null && hour < 24 && minute < 60;
 
     return AppSettings(
-      theme: AppTheme.values.asNameMap()[json['theme']] ?? d.theme,
-      font: AppFont.values.asNameMap()[json['font']] ?? d.font,
+      theme:
+          AppTheme.values.asNameMap()[json['theme']] ??
+          _legacyThemes[json['theme']] ??
+          d.theme,
+      // Before v1.1 every config saved the then-default "system" font;
+      // those move to the new Ledger default, deliberate choices stay.
+      font: json['design'] != 'ledger' && json['font'] == 'system'
+          ? d.font
+          : AppFont.values.asNameMap()[json['font']] ?? d.font,
       textScale: scale is num && kTextScales.containsValue(scale.toDouble())
           ? scale.toDouble()
           : d.textScale,

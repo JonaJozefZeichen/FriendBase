@@ -20,7 +20,7 @@ void main() {
   test('defaults when no config exists', () async {
     final s = await storage.load();
     expect(s.theme, AppTheme.system);
-    expect(s.font, AppFont.system);
+    expect(s.font, AppFont.ledger);
     expect(s.sort, ListSort.urgency);
     expect(s.anyReminders, isFalse);
     expect(s.reminderTimeLabel, '09:00');
@@ -28,7 +28,7 @@ void main() {
 
   test('every field round-trips through config.json', () async {
     const custom = AppSettings(
-      theme: AppTheme.lavender,
+      theme: AppTheme.kraft,
       font: AppFont.serif,
       textScale: 1.3,
       compactList: true,
@@ -54,8 +54,32 @@ void main() {
       ..createSync(recursive: true)
       ..writeAsStringSync('{"theme": "dark"}');
     final s = await storage.load();
-    expect(s.theme, AppTheme.dark);
-    expect(s.font, AppFont.system);
+    expect(s.theme, AppTheme.ink);
+    expect(s.font, AppFont.ledger);
+  });
+
+  test('pre-Ledger themes map to papers, old default font to Ledger', () async {
+    config().createSync(recursive: true);
+    for (final (old, paper) in [
+      ('light', AppTheme.cream),
+      ('rose', AppTheme.cream),
+      ('lavender', AppTheme.cream),
+      ('dark', AppTheme.ink),
+      ('mint', AppTheme.blue),
+      ('sky', AppTheme.blue),
+      ('system', AppTheme.system),
+    ]) {
+      config().writeAsStringSync('{"theme": "$old", "font": "system"}');
+      final s = await storage.load();
+      expect(s.theme, paper, reason: old);
+      expect(s.font, AppFont.ledger, reason: 'v1.0 default font');
+    }
+    // A deliberate font choice survives the upgrade…
+    config().writeAsStringSync('{"theme": "light", "font": "serif"}');
+    expect((await storage.load()).font, AppFont.serif);
+    // …and after v1.1 "system" means the system font.
+    config().writeAsStringSync('{"design": "ledger", "font": "system"}');
+    expect((await storage.load()).font, AppFont.system);
   });
 
   test('broken or unknown values fall back to defaults', () async {

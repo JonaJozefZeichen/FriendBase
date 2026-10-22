@@ -184,14 +184,6 @@
       }
     }
   },
-  "theme": "Theme",
-  "themeSystem": "System",
-  "themeLight": "Light",
-  "themeDark": "Dark",
-  "themeRose": "Rose",
-  "themeMint": "Mint",
-  "themeSky": "Sky",
-  "themeLavender": "Lavender",
   "display": "Display",
   "font": "Font",
   "fontSystem": "System",
@@ -325,5 +317,11 @@
         "type": "int"
       }
     }
-  }
+  },
+  "paper": "Paper",
+  "paperSystem": "System",
+  "paperCream": "Cream",
+  "paperKraft": "Kraft",
+  "paperBlue": "Blue",
+  "paperInk": "Ink"
 }

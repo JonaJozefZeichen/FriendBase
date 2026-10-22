@@ -274,30 +274,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get theme => 'Design';
-
-  @override
-  String get themeSystem => 'System';
-
-  @override
-  String get themeLight => 'Hell';
-
-  @override
-  String get themeDark => 'Dunkel';
-
-  @override
-  String get themeRose => 'Rosé';
-
-  @override
-  String get themeMint => 'Minze';
-
-  @override
-  String get themeSky => 'Himmel';
-
-  @override
-  String get themeLavender => 'Lavendel';
-
-  @override
   String get display => 'Anzeige';
 
   @override
@@ -479,4 +455,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String reminderCallBody(int days, int interval) {
     return '$days Tage seit dem letzten Anruf (alle $interval Tage)';
   }
+
+  @override
+  String get paper => 'Papier';
+
+  @override
+  String get paperSystem => 'System';
+
+  @override
+  String get paperCream => 'Creme';
+
+  @override
+  String get paperKraft => 'Kraft';
+
+  @override
+  String get paperBlue => 'Blau';
+
+  @override
+  String get paperInk => 'Tinte';
 }

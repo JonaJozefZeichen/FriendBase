@@ -69,14 +69,6 @@
   "clear": "Entfernen",
   "done": "Fertig",
   "yearUnknownHint": "Lass das Jahr auf {dash}, wenn du es nicht weißt.",
-  "theme": "Design",
-  "themeSystem": "System",
-  "themeLight": "Hell",
-  "themeDark": "Dunkel",
-  "themeRose": "Rosé",
-  "themeMint": "Minze",
-  "themeSky": "Himmel",
-  "themeLavender": "Lavendel",
   "display": "Anzeige",
   "font": "Schrift",
   "fontSystem": "System",
@@ -127,5 +119,11 @@
   "reminderInDays": "In {days} Tagen ({date})",
   "reminderTurns": " — wird {age}",
   "reminderCallTitle": "Zeit, {name} anzurufen",
-  "reminderCallBody": "{days} Tage seit dem letzten Anruf (alle {interval} Tage)"
+  "reminderCallBody": "{days} Tage seit dem letzten Anruf (alle {interval} Tage)",
+  "paper": "Papier",
+  "paperSystem": "System",
+  "paperCream": "Creme",
+  "paperKraft": "Kraft",
+  "paperBlue": "Blau",
+  "paperInk": "Tinte"
 }

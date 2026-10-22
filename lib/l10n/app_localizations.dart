@@ -512,54 +512,6 @@ abstract class AppLocalizations {
   /// **'Leave the year at {dash} if you don\'t know it.'**
   String yearUnknownHint(String dash);
 
-  /// No description provided for @theme.
-  ///
-  /// In en, this message translates to:
-  /// **'Theme'**
-  String get theme;
-
-  /// No description provided for @themeSystem.
-  ///
-  /// In en, this message translates to:
-  /// **'System'**
-  String get themeSystem;
-
-  /// No description provided for @themeLight.
-  ///
-  /// In en, this message translates to:
-  /// **'Light'**
-  String get themeLight;
-
-  /// No description provided for @themeDark.
-  ///
-  /// In en, this message translates to:
-  /// **'Dark'**
-  String get themeDark;
-
-  /// No description provided for @themeRose.
-  ///
-  /// In en, this message translates to:
-  /// **'Rose'**
-  String get themeRose;
-
-  /// No description provided for @themeMint.
-  ///
-  /// In en, this message translates to:
-  /// **'Mint'**
-  String get themeMint;
-
-  /// No description provided for @themeSky.
-  ///
-  /// In en, this message translates to:
-  /// **'Sky'**
-  String get themeSky;
-
-  /// No description provided for @themeLavender.
-  ///
-  /// In en, this message translates to:
-  /// **'Lavender'**
-  String get themeLavender;
-
   /// No description provided for @display.
   ///
   /// In en, this message translates to:
@@ -865,6 +817,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days}d since your last call (every {interval}d)'**
   String reminderCallBody(int days, int interval);
+
+  /// No description provided for @paper.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper'**
+  String get paper;
+
+  /// No description provided for @paperSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get paperSystem;
+
+  /// No description provided for @paperCream.
+  ///
+  /// In en, this message translates to:
+  /// **'Cream'**
+  String get paperCream;
+
+  /// No description provided for @paperKraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Kraft'**
+  String get paperKraft;
+
+  /// No description provided for @paperBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get paperBlue;
+
+  /// No description provided for @paperInk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ink'**
+  String get paperInk;
 }
 
 class _AppLocalizationsDelegate

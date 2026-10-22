@@ -7,7 +7,9 @@ import '../../domain/date_format.dart';
 import '../../domain/friend.dart';
 import '../../domain/app_settings.dart';
 import '../../l10n/l10n.dart';
+import '../../app/theme.dart';
 import '../../ui_kit/friend_avatar.dart';
+import '../../ui_kit/ledger.dart';
 import '../../ui_kit/widgets.dart';
 import '../friend_detail/friend_detail_screen.dart';
 import '../friend_edit/friend_edit_screen.dart';
@@ -39,77 +41,160 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
     final friends = ref.watch(friendsProvider);
     final problems = ref.watch(friendRepositoryProvider).problems;
 
+    final tokens = LedgerTokens.of(context);
+    final dark = tokens.paper.brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.appTitle),
-        actions: [
-          IconButton(
-            tooltip: context.l10n.options,
-            icon: const Icon(Icons.tune_rounded),
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: context.l10n.addFriend,
-        onPressed: () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const FriendEditScreen())),
-        child: const Icon(Icons.person_add_alt_1_rounded),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: TextField(
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search_rounded),
-                hintText: context.l10n.search,
-                isDense: true,
-              ),
-              onChanged: (v) => setState(() => _query = v),
-            ),
-          ),
-          if (problems.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                context.l10n.filesUnreadable(
-                  problems.length,
-                  problems.map((p) => p.folder).join(', '),
-                ),
-              ),
-            ),
-          Expanded(
-            child: friends.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) =>
-                  Center(child: Text(context.l10n.somethingWentWrong('$e'))),
-              data: (all) {
-                if (all.isEmpty) return const _EmptyState();
-                final settings = ref.watch(settingsProvider);
-                final visible = sortFriends(all.where(_matches), settings.sort);
-                return RefreshIndicator(
-                  onRefresh: () => ref.read(friendsProvider.notifier).reload(),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 96),
-                    itemCount: visible.length,
-                    separatorBuilder: (_, _) =>
-                        const Divider(indent: 72, endIndent: 12),
-                    itemBuilder: (_, i) => _FriendRow(
-                      friend: visible[i],
-                      compact: settings.compactList,
-                      detail: settings.listDetail,
-                      dateStyle: settings.dateStyle,
+      body: PaperBackground(
+        scraps: true,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 16, 0),
+                    child: Row(
+                      children: [
+                        ColorFiltered(
+                          colorFilter: ColorFilter.mode(
+                            tokens.paper.ink,
+                            BlendMode.srcIn,
+                          ),
+                          child: Image.asset(
+                            'assets/images/fb-logo.png',
+                            width: 30,
+                            height: 30,
+                            excludeFromSemantics: true,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            context.l10n.appTitle,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        FloatingRoundButton(
+                          icon: Icons.tune_rounded,
+                          tooltip: context.l10n.options,
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsScreen(),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              },
-            ),
+                  if (problems.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: Text(
+                        context.l10n.filesUnreadable(
+                          problems.length,
+                          problems.map((p) => p.folder).join(', '),
+                        ),
+                        style: TextStyle(color: tokens.paper.danger),
+                      ),
+                    ),
+                  Expanded(
+                    child: friends.when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Center(
+                        child: Text(context.l10n.somethingWentWrong('$e')),
+                      ),
+                      data: (all) {
+                        if (all.isEmpty) return const _EmptyState();
+                        final settings = ref.watch(settingsProvider);
+                        final visible = sortFriends(
+                          all.where(_matches),
+                          settings.sort,
+                        );
+                        return RefreshIndicator(
+                          onRefresh: () =>
+                              ref.read(friendsProvider.notifier).reload(),
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 110),
+                            children: [
+                              if (visible.isNotEmpty)
+                                SectionCard(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 4,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      for (final (i, friend)
+                                          in visible.indexed) ...[
+                                        if (i > 0)
+                                          const Divider(
+                                            indent: 64,
+                                            endIndent: 10,
+                                          ),
+                                        _FriendRow(
+                                          friend: friend,
+                                          compact: settings.compactList,
+                                          detail: settings.listDetail,
+                                          dateStyle: settings.dateStyle,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GlassSurface(
+                        radius: 999,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: TextField(
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.search_rounded),
+                            hintText: context.l10n.search,
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 15,
+                            ),
+                          ),
+                          onChanged: (v) => setState(() => _query = v),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    FloatingActionButton(
+                      tooltip: context.l10n.addFriend,
+                      elevation: dark ? 2 : 4,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const FriendEditScreen(),
+                        ),
+                      ),
+                      child: const Icon(Icons.person_add_alt_1_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -141,11 +226,11 @@ class _FriendRow extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: 8,
-          vertical: compact ? 6 : 12,
+          vertical: compact ? 6 : 10,
         ),
         child: Row(
           children: [
-            FriendAvatar(friend: friend, size: compact ? 36 : 44),
+            FriendAvatar(friend: friend, size: compact ? 34 : 42, square: true),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -181,8 +266,10 @@ class _LastCallTrailing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final tokens = LedgerTokens.of(context);
+    final paper = tokens.paper;
     final status = CallStatus.of(friend);
+    final overdue = status.state == CallState.overdue;
     final days = status.daysSince;
     final urgent =
         status.state == CallState.due || status.state == CallState.overdue;
@@ -197,7 +284,7 @@ class _LastCallTrailing extends StatelessWidget {
               height: 8,
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
-                color: colors.onSurface,
+                color: paper.danger,
                 shape: BoxShape.circle,
               ),
             ),
@@ -208,9 +295,14 @@ class _LastCallTrailing extends StatelessWidget {
             0 => context.l10n.lastCallAgo(0),
             _ => context.l10n.daysShort(days),
           },
-          style: TextStyle(
-            fontWeight: urgent ? FontWeight.w700 : FontWeight.w400,
-            color: urgent ? colors.onSurface : colors.onSurfaceVariant,
+          style: tokens.data(
+            size: 14,
+            weight: urgent ? FontWeight.w600 : FontWeight.w400,
+            color: overdue
+                ? paper.danger
+                : urgent
+                ? paper.accent
+                : paper.muted,
           ),
         ),
       ],
@@ -227,11 +319,11 @@ class _BirthdayTrailing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
+    final tokens = LedgerTokens.of(context);
+    final muted = tokens.paper.muted;
     final birthday = friend.birthday;
     if (birthday == null) {
-      return Text(kNoValue, style: TextStyle(color: muted));
+      return Text(kNoValue, style: tokens.data(size: 14, color: muted));
     }
     final days = birthday.daysUntil(DateTime.now());
     return Column(
@@ -239,13 +331,14 @@ class _BirthdayTrailing extends StatelessWidget {
       children: [
         Text(
           formatDay(dateStyle, day: birthday.day, month: birthday.month),
-          style: TextStyle(color: muted),
+          style: tokens.data(size: 14, color: tokens.paper.ink),
         ),
         Text(
           context.l10n.inDaysShort(days),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: muted.withValues(alpha: 0.75),
-            fontWeight: days <= 1 ? FontWeight.w700 : null,
+          style: tokens.data(
+            size: 11,
+            color: days <= 1 ? tokens.paper.accent : muted,
+            weight: days <= 1 ? FontWeight.w600 : null,
           ),
         ),
       ],

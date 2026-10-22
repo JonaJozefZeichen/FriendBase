@@ -272,30 +272,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get theme => 'Theme';
-
-  @override
-  String get themeSystem => 'System';
-
-  @override
-  String get themeLight => 'Light';
-
-  @override
-  String get themeDark => 'Dark';
-
-  @override
-  String get themeRose => 'Rose';
-
-  @override
-  String get themeMint => 'Mint';
-
-  @override
-  String get themeSky => 'Sky';
-
-  @override
-  String get themeLavender => 'Lavender';
-
-  @override
   String get display => 'Display';
 
   @override
@@ -477,4 +453,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String reminderCallBody(int days, int interval) {
     return '${days}d since your last call (every ${interval}d)';
   }
+
+  @override
+  String get paper => 'Paper';
+
+  @override
+  String get paperSystem => 'System';
+
+  @override
+  String get paperCream => 'Cream';
+
+  @override
+  String get paperKraft => 'Kraft';
+
+  @override
+  String get paperBlue => 'Blue';
+
+  @override
+  String get paperInk => 'Ink';
 }

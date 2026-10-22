@@ -46,6 +46,7 @@ void _registerLicences() {
     ('FriendBase', 'assets/LICENSE.txt'),
     ('Source Serif 4', 'assets/fonts/SourceSerif4-OFL.txt'),
     ('Atkinson Hyperlegible', 'assets/fonts/AtkinsonHyperlegible-OFL.txt'),
+    ('IBM Plex Mono', 'assets/fonts/IBMPlexMono-OFL.txt'),
   ]) {
     LicenseRegistry.addLicense(() async* {
       yield LicenseEntryWithLineBreaks([
@@ -67,13 +68,10 @@ class FriendBaseApp extends ConsumerWidget {
       locale: localeFor(settings.language),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      // `system` follows the phone: Light theme, Dark as its dark variant.
-      // Any other choice is used as-is.
-      theme: buildTheme(
-        kPalettes[settings.theme] ?? kLight,
-        font: settings.font,
-      ),
-      darkTheme: buildTheme(kDark, font: settings.font),
+      // `system` follows the phone: Cream paper by day, Ink at night.
+      // Any other paper is used as-is.
+      theme: buildTheme(kPapers[settings.theme] ?? kCream, font: settings.font),
+      darkTheme: buildTheme(kInk, font: settings.font),
       themeMode: settings.theme == AppTheme.system
           ? ThemeMode.system
           : ThemeMode.light,

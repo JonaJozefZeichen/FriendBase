@@ -6,7 +6,7 @@ FriendBase is a local-only, offline phone app (iOS + Android) to keep track of f
 - Friend view with profile picture, contact details, birthday, one-tap call logging (hold for an earlier date) and notes
 - Reference images with captions, full-screen viewer
 - Reminders for upcoming birthdays (days ahead and/or on the day) and overdue calls — scheduled locally
-- Seven colour themes, four fonts, text size, date format (European / American / ISO)
+- "Ledger" design: dot-grid paper, frosted glass cards, serif names with monospace data; four papers (Cream, Kraft, Blue, Ink) plus System, five font choices, text size, date format (European / American / ISO)
 - English and German
 - No account, no network, no analytics — see the [privacy policy](PRIVACY.md) ([Deutsch](PRIVACY.de.md))
 

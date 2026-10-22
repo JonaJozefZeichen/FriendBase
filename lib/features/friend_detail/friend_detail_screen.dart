@@ -10,7 +10,9 @@ import '../../domain/date_format.dart';
 import '../../domain/friend.dart';
 import '../../l10n/l10n.dart';
 import '../../ui_kit/caption_dialog.dart';
+import '../../app/theme.dart';
 import '../../ui_kit/friend_avatar.dart';
+import '../../ui_kit/ledger.dart';
 import '../../ui_kit/image_source_sheet.dart';
 import '../../ui_kit/widgets.dart';
 import '../friend_edit/friend_edit_screen.dart';
@@ -51,44 +53,49 @@ class FriendDetailScreen extends ConsumerWidget {
     // away with it instead of following you back to the list.
     return ScaffoldMessenger(
       child: Scaffold(
-        body: SafeArea(
-          child: Stack(
-            children: [
-              CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(child: _InfoCard(friend: friend)),
-                  SliverPadding(
-                    padding: gutter,
-                    sliver: SliverToBoxAdapter(
-                      child: _ImageStrip(friend: friend),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: gutter.copyWith(bottom: 20),
-                    sliver: SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: SectionCard(
-                        title: context.l10n.notes,
-                        fill: true,
-                        child: friend.notes.trim().isEmpty
-                            ? Text(
-                                context.l10n.notesHint,
-                                style: TextStyle(
-                                  color: Theme.of(context).hintColor,
-                                ),
-                              )
-                            : SelectableText(
-                                friend.notes.trim(),
-                                style: const TextStyle(height: 1.45),
-                              ),
+        body: PaperBackground(
+          child: SafeArea(
+            child: Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(child: _InfoCard(friend: friend)),
+                    SliverPadding(
+                      padding: gutter,
+                      sliver: SliverToBoxAdapter(
+                        child: _ImageStrip(friend: friend),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              // Above the scroll view, so it stays put while scrolling.
-              const Positioned(left: 8, top: 8, child: BackRoundButton()),
-            ],
+                    SliverPadding(
+                      padding: gutter.copyWith(bottom: 20),
+                      sliver: SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: SectionCard(
+                          fill: true,
+                          padding: const EdgeInsets.all(10),
+                          // The page fills the card, like a notebook page.
+                          child: SizedBox.expand(
+                            child: RuledPage(
+                              fill: true,
+                              child: friend.notes.trim().isEmpty
+                                  ? Text(
+                                      context.l10n.notesHint,
+                                      style: TextStyle(
+                                        color: Theme.of(context).hintColor,
+                                      ),
+                                    )
+                                  : SelectableText(friend.notes.trim()),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // Above the scroll view, so it stays put while scrolling.
+                const Positioned(left: 8, top: 8, child: BackRoundButton()),
+              ],
+            ),
           ),
         ),
       ),
@@ -147,6 +154,7 @@ class _InfoCard extends ConsumerWidget {
                             friend.nickname!,
                             style: TextStyle(
                               color: theme.colorScheme.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
                             ),
                           ),
                       ],
@@ -182,6 +190,7 @@ class _InfoCard extends ConsumerWidget {
             if (birthday != null)
               _InfoRow(
                 icon: Icons.cake_outlined,
+                data: true,
                 text: formatDay(
                   dateStyle,
                   day: birthday.day,
@@ -220,10 +229,14 @@ class _InfoRow extends StatelessWidget {
     required this.text,
     this.note,
     this.onTap,
+    this.data = false,
   });
 
   final IconData icon;
   final String text;
+
+  /// Show [text] in the data (monospace) font, e.g. for dates.
+  final bool data;
 
   /// A smaller, paler side note under [text].
   final String? note;
@@ -248,17 +261,17 @@ class _InfoRow extends StatelessWidget {
                 children: [
                   Text(
                     text,
-                    style: onTap == null
+                    style: data
+                        ? LedgerTokens.of(context).data(size: 15)
+                        : onTap == null
                         ? null
-                        : const TextStyle(fontWeight: FontWeight.w500),
+                        : const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   if (note != null)
                     Text(
                       note!,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.8,
-                        ),
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                 ],
@@ -283,11 +296,13 @@ class _CallSection extends ConsumerWidget {
     final history = friend.callTimes.reversed.take(3).toList();
     final dateStyle = ref.watch(settingsProvider.select((s) => s.dateStyle));
 
+    final tokens = LedgerTokens.of(context);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.only(top: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -306,31 +321,35 @@ class _CallSection extends ConsumerWidget {
                     ),
                     Text(
                       lastCallLabel(context, status.daysSince),
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    if (history.isNotEmpty)
+                      Text(
+                        context.l10n.recentCalls(
+                          history
+                              .map((t) => _shortDate(dateStyle, t))
+                              .join(', '),
+                        ),
+                        style: tokens.data(size: 12, color: tokens.paper.muted),
+                      ),
                   ],
                 ),
               ),
-              _CalledButton(
+              LensButton(
+                label: context.l10n.calledToday,
+                hint: context.l10n.calledTodayHint,
                 onTap: () => _logCall(context, ref, DateTime.now()),
                 onLongPress: () => _logPastCall(context, ref),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
-            [
-              context.l10n.callHint,
-              if (history.isNotEmpty)
-                context.l10n.recentCalls(
-                  history.map((t) => _shortDate(dateStyle, t)).join(', '),
-                ),
-            ].join('\n'),
+            context.l10n.callHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              height: 1.5,
             ),
           ),
         ],
@@ -398,54 +417,48 @@ class _ImageStrip extends ConsumerWidget {
 
   final Friend friend;
 
-  static const _tile = 76.0;
+  static const _tile = 66.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.watch(friendRepositoryProvider);
 
-    return SectionCard(
-      title: context.l10n.images,
-      padding: const EdgeInsets.all(10),
-      child: SizedBox(
-        height: _tile,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: friend.images.length + 1,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (context, i) {
-            if (i == friend.images.length) {
-              return _AddTile(
-                size: _tile,
-                onTap: () => _addImage(context, ref),
-              );
-            }
-            final file = repo.imageFile(friend, friend.images[i]);
-            const broken = Center(child: Icon(Icons.broken_image_outlined));
-            return GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ImageViewScreen(friendId: friend.id, initialIndex: i),
-                ),
+    // Polaroids lie straight on the paper; room around them for the tilt.
+    return SizedBox(
+      height: _tile + 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        itemCount: friend.images.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 14),
+        itemBuilder: (context, i) {
+          if (i == friend.images.length) {
+            return _AddTile(size: _tile, onTap: () => _addImage(context, ref));
+          }
+          final file = repo.imageFile(friend, friend.images[i]);
+          const broken = Center(child: Icon(Icons.broken_image_outlined));
+          return GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    ImageViewScreen(friendId: friend.id, initialIndex: i),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox.square(
-                  dimension: _tile,
-                  child: file == null
-                      ? broken
-                      : Image.file(
-                          file,
-                          fit: BoxFit.cover,
-                          cacheWidth: 228,
-                          errorBuilder: (_, _, _) => broken,
-                        ),
-                ),
-              ),
-            );
-          },
-        ),
+            ),
+            child: Polaroid(
+              tilt: i.isEven ? -3 : 2,
+              size: _tile,
+              child: file == null
+                  ? broken
+                  : Image.file(
+                      file,
+                      fit: BoxFit.cover,
+                      cacheWidth: 200,
+                      errorBuilder: (_, _, _) => broken,
+                    ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -495,61 +508,16 @@ class _AddTile extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Tooltip(
       message: context.l10n.addImage,
-      child: Material(
-        color: colors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
+      child: GlassSurface(
+        radius: 16,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
           onTap: onTap,
-          child: SizedBox.square(
-            dimension: size,
+          child: SizedBox(
+            width: size + 6,
+            height: size + 14,
             child: Icon(
               Icons.add_photo_alternate_outlined,
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The round "I called them" button: just a dot, no text.
-class _CalledButton extends StatelessWidget {
-  const _CalledButton({required this.onTap, required this.onLongPress});
-
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: context.l10n.calledToday,
-      child: Semantics(
-        button: true,
-        label: context.l10n.calledToday,
-        hint: context.l10n.calledTodayHint,
-        excludeSemantics: true,
-        child: Material(
-          color: colors.onSurface,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            onLongPress: onLongPress,
-            child: SizedBox.square(
-              dimension: 52,
-              child: Center(
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
+              color: colors.primary,
             ),
           ),
         ),

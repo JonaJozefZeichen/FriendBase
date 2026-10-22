@@ -378,23 +378,26 @@ void main() {
     expect(find.text('No friends yet'), findsOneWidget);
   });
 
-  testWidgets('options: colour theme applies and is saved', (tester) async {
+  testWidgets('options: paper applies and is saved', (tester) async {
     final settings = _MemorySettings();
     await tester.pumpWidget(_app(_MemoryRepository([]), settings: settings));
     await tester.pumpAndSettle();
     MaterialApp app() => tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app().themeMode, ThemeMode.system);
+    expect(app().theme!.scaffoldBackgroundColor, kCream.paper);
+    expect(app().darkTheme!.scaffoldBackgroundColor, kInk.paper);
 
-    await _openOptions(tester);
-    await tester.tap(find.text('Rose'));
+    await _openOptions(tester, find.text('Kraft'));
+    await tester.tap(find.text('Kraft'));
     await tester.pumpAndSettle();
     expect(app().themeMode, ThemeMode.light);
-    expect(app().theme!.scaffoldBackgroundColor, kPalettes[AppTheme.rose]!.bg);
-    expect(settings.saved?.theme, AppTheme.rose);
+    expect(app().theme!.scaffoldBackgroundColor, kKraft.paper);
+    expect(settings.saved?.theme, AppTheme.kraft);
 
-    await tester.tap(find.text('Dark'));
+    await tester.tap(find.text('Ink'));
     await tester.pumpAndSettle();
-    expect(app().theme!.scaffoldBackgroundColor, kDark.bg);
+    expect(app().theme!.scaffoldBackgroundColor, kInk.paper);
+    expect(app().theme!.brightness, Brightness.dark);
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
@@ -405,15 +408,19 @@ void main() {
     await tester.pumpWidget(_app(_MemoryRepository([])));
     await tester.pumpAndSettle();
     MaterialApp app() => tester.widget<MaterialApp>(find.byType(MaterialApp));
+    LedgerTokens tokens() => app().theme!.extension<LedgerTokens>()!;
+    // Ledger default: serif text, mono data.
+    expect(app().theme!.textTheme.bodyMedium!.fontFamily, 'SourceSerif4');
+    expect(tokens().dataFamily, 'IBMPlexMono');
+
+    await _openOptions(tester, find.text('Readable'));
+    await tester.tap(find.text('Readable'));
+    await tester.pumpAndSettle();
     expect(
       app().theme!.textTheme.bodyMedium!.fontFamily,
-      isNot('SourceSerif4'),
+      'AtkinsonHyperlegible',
     );
-
-    await _openOptions(tester, find.text('Serif'));
-    await tester.tap(find.text('Serif'));
-    await tester.pumpAndSettle();
-    expect(app().theme!.textTheme.bodyMedium!.fontFamily, 'SourceSerif4');
+    expect(tokens().dataFamily, 'AtkinsonHyperlegible');
 
     await tester.tap(find.text('XL'));
     await tester.pumpAndSettle();
@@ -775,7 +782,7 @@ void main() {
     expect(settings.saved?.language, AppLanguage.de);
     expect(find.text('Optionen'), findsOneWidget);
     expect(find.text('Sprache'), findsOneWidget);
-    expect(find.text('Dunkel'), findsOneWidget);
+    expect(find.text('Papier'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Zurück'));
     await tester.pumpAndSettle();
@@ -787,7 +794,8 @@ void main() {
     expect(find.text('Letzter Anruf'), findsOneWidget);
     expect(find.text('vor 18 Tagen'), findsOneWidget);
     expect(find.textContaining('wird 32'), findsOneWidget);
-    expect(find.text('Notizen'), findsOneWidget);
+    // No section titles in the Ledger design; the hint says it all.
+    expect(find.text('Notizen'), findsNothing);
     expect(find.text('Fakten, Lieblingsdinge usw.'), findsOneWidget);
 
     // Built-in Flutter widgets follow too, e.g. the birthday wheels.
@@ -816,6 +824,8 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text('Über FriendBase'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Über FriendBase'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Datenschutzerklärung'));

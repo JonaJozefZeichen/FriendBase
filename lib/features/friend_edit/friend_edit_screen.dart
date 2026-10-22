@@ -11,6 +11,7 @@ import '../../domain/friend.dart';
 import '../../domain/ulid.dart';
 import '../../domain/date_format.dart';
 import '../../l10n/l10n.dart';
+import '../../ui_kit/ledger.dart';
 import '../../ui_kit/birthday_picker.dart';
 import '../../ui_kit/friend_avatar.dart';
 import '../../ui_kit/image_source_sheet.dart';
@@ -135,90 +136,93 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.friend == null
-              ? context.l10n.newFriend
-              : context.l10n.editFriend,
-        ),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: Text(context.l10n.save),
+    return PaperBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(
+            widget.friend == null
+                ? context.l10n.newFriend
+                : context.l10n.editFriend,
           ),
-        ],
-      ),
-      body: Form(
-        key: _form,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-          children: [
-            _avatarPicker(),
-            const SizedBox(height: 16),
-            _field(
-              _name,
-              context.l10n.name,
-              icon: Icons.person_outline_rounded,
-              validator: (v) =>
-                  (v ?? '').trim().isEmpty ? context.l10n.nameRequired : null,
+          actions: [
+            TextButton(
+              onPressed: _saving ? null : _save,
+              child: Text(context.l10n.save),
             ),
-            _field(
-              _nickname,
-              context.l10n.nickname,
-              icon: Icons.badge_outlined,
-            ),
-            _birthdayField(),
-            _field(
-              _phones,
-              context.l10n.phoneNumbers,
-              icon: Icons.phone_outlined,
-              helper: context.l10n.onePerLine,
-              keyboard: TextInputType.phone,
-              lines: 2,
-            ),
-            _field(
-              _emails,
-              context.l10n.emails,
-              icon: Icons.mail_outline_rounded,
-              helper: context.l10n.onePerLine,
-              keyboard: TextInputType.emailAddress,
-              lines: 2,
-            ),
-            _field(
-              _address,
-              context.l10n.address,
-              icon: Icons.home_outlined,
-              lines: 2,
-            ),
-            _field(
-              _interval,
-              context.l10n.callEvery,
-              icon: Icons.update_rounded,
-              helper: context.l10n.callEveryHelper(kDefaultCallIntervalDays),
-              keyboard: TextInputType.number,
-              validator: (v) {
-                final s = (v ?? '').trim();
-                if (s.isEmpty) return null;
-                final n = int.tryParse(s);
-                return n == null || n < 1 ? context.l10n.wholeNumber : null;
-              },
-            ),
-            _field(
-              _notes,
-              context.l10n.notes,
-              lines: 12,
-              hint: context.l10n.notesHint,
-            ),
-            if (widget.friend != null) ...[
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _saving ? null : _confirmDelete,
-                icon: const Icon(Icons.delete_outline_rounded),
-                label: Text(context.l10n.deleteFriend),
-              ),
-            ],
           ],
+        ),
+        body: Form(
+          key: _form,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            children: [
+              _avatarPicker(),
+              const SizedBox(height: 16),
+              _field(
+                _name,
+                context.l10n.name,
+                icon: Icons.person_outline_rounded,
+                validator: (v) =>
+                    (v ?? '').trim().isEmpty ? context.l10n.nameRequired : null,
+              ),
+              _field(
+                _nickname,
+                context.l10n.nickname,
+                icon: Icons.badge_outlined,
+              ),
+              _birthdayField(),
+              _field(
+                _phones,
+                context.l10n.phoneNumbers,
+                icon: Icons.phone_outlined,
+                helper: context.l10n.onePerLine,
+                keyboard: TextInputType.phone,
+                lines: 2,
+              ),
+              _field(
+                _emails,
+                context.l10n.emails,
+                icon: Icons.mail_outline_rounded,
+                helper: context.l10n.onePerLine,
+                keyboard: TextInputType.emailAddress,
+                lines: 2,
+              ),
+              _field(
+                _address,
+                context.l10n.address,
+                icon: Icons.home_outlined,
+                lines: 2,
+              ),
+              _field(
+                _interval,
+                context.l10n.callEvery,
+                icon: Icons.update_rounded,
+                helper: context.l10n.callEveryHelper(kDefaultCallIntervalDays),
+                keyboard: TextInputType.number,
+                validator: (v) {
+                  final s = (v ?? '').trim();
+                  if (s.isEmpty) return null;
+                  final n = int.tryParse(s);
+                  return n == null || n < 1 ? context.l10n.wholeNumber : null;
+                },
+              ),
+              _field(
+                _notes,
+                context.l10n.notes,
+                lines: 12,
+                hint: context.l10n.notesHint,
+              ),
+              if (widget.friend != null) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _saving ? null : _confirmDelete,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: Text(context.l10n.deleteFriend),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

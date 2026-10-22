@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
 import '../l10n/l10n.dart';
+import 'ledger.dart';
 
-/// A soft rounded card with an optional small heading above it.
+/// A frosted glass card with an optional small heading above it.
 class SectionCard extends StatelessWidget {
   const SectionCard({
     super.key,
@@ -23,20 +24,11 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // A Material (not a coloured Container) so ListTiles and InkWells
-    // inside can paint their ripples on it.
     final card = SizedBox(
       width: double.infinity,
-      child: Material(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(kRadius),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: padding,
-          child: fill
-              ? Align(alignment: Alignment.topLeft, child: child)
-              : child,
-        ),
+      child: GlassSurface(
+        padding: padding,
+        child: fill ? Align(alignment: Alignment.topLeft, child: child) : child,
       ),
     );
     if (title == null) return card;
@@ -59,37 +51,50 @@ class SectionCard extends StatelessWidget {
   }
 }
 
-/// A small round button floating over content, e.g. the back button.
+/// A small round glass button floating over content, e.g. the back
+/// button. [filled] makes it a solid ballpoint-blue action instead.
 class FloatingRoundButton extends StatelessWidget {
   const FloatingRoundButton({
     super.key,
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.filled = false,
+    this.size = 46,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
+  final bool filled;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: colors.onSurface,
-        shape: const CircleBorder(),
-        elevation: 2,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: SizedBox.square(
-            dimension: 44,
-            child: Icon(icon, size: 20, color: colors.surface),
-          ),
+    final button = InkWell(
+      customBorder: const CircleBorder(),
+      onTap: onPressed,
+      child: SizedBox.square(
+        dimension: size,
+        child: Icon(
+          icon,
+          size: 20,
+          color: filled ? colors.onPrimary : colors.onSurface,
         ),
       ),
+    );
+    return Tooltip(
+      message: tooltip,
+      child: filled
+          ? Material(
+              color: colors.primary,
+              shape: const CircleBorder(),
+              elevation: 4,
+              shadowColor: colors.primary.withValues(alpha: 0.5),
+              child: button,
+            )
+          : GlassSurface(circle: true, child: button),
     );
   }
 }
@@ -156,8 +161,8 @@ class ToggleRow extends StatelessWidget {
   }
 }
 
-/// A segmented control: equal-width options, the selected one slides into
-/// a filled pill.
+/// A segmented control on a glass track; the selected option sits under a
+/// white "lens" thumb.
 class SegmentedChoice<T> extends StatelessWidget {
   const SegmentedChoice({
     super.key,
@@ -174,12 +179,14 @@ class SegmentedChoice<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Container(
+    final paper = LedgerTokens.of(context).paper;
+    final dark = paper.brightness == Brightness.dark;
+    final thumb = dark
+        ? Colors.white.withValues(alpha: 0.16)
+        : Colors.white.withValues(alpha: 0.95);
+    return GlassSurface(
+      radius: 999,
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: Row(
         children: [
           for (final (value, label, style) in options)
@@ -191,14 +198,25 @@ class SegmentedChoice<T> extends StatelessWidget {
                   behavior: HitTestBehavior.opaque,
                   onTap: () => onSelected(value),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
+                    duration: const Duration(milliseconds: 220),
+                    // No overshooting curve: it would push the shadow's
+                    // blur below zero mid-animation.
+                    curve: Curves.easeOutCubic,
                     height: 38,
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
-                      color: value == selected ? colors.onSurface : null,
-                      borderRadius: BorderRadius.circular(10),
+                      color: value == selected ? thumb : null,
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: value == selected && !dark
+                          ? const [
+                              BoxShadow(
+                                color: Color(0x262E2645),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -206,10 +224,10 @@ class SegmentedChoice<T> extends StatelessWidget {
                         label,
                         maxLines: 1,
                         style: (style ?? const TextStyle()).copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: value == selected
-                              ? colors.surface
-                              : colors.onSurface,
+                          fontWeight: value == selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: colors.onSurface,
                         ),
                       ),
                     ),
