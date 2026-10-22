@@ -50,11 +50,26 @@ android {
         }
     }
 
+    packaging {
+        // Compress the native libraries inside the APK: a much smaller
+        // download, unpacked once when the app is installed.
+        jniLibs.useLegacyPackaging = true
+    }
+
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release")
                 ?: signingConfigs.getByName("debug")
         }
+    }
+}
+
+// Release APKs are for real phones (64- and 32-bit ARM). Drop the x86
+// libraries plugins bring along, so an x86 device doesn't pick a half
+// set; debug builds keep them for the emulator.
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.packaging.jniLibs.excludes.addAll("lib/x86/**", "lib/x86_64/**")
     }
 }
 
