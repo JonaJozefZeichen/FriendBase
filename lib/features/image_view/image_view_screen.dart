@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../domain/friend.dart';
 import '../../ui_kit/ascii.dart';
+import '../../ui_kit/caption_dialog.dart';
 
 /// A friend's images full screen: swipe or use `<` `>` to move between them,
 /// tap the caption box at the bottom to write what the image is about.
@@ -143,10 +144,7 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
     Friend friend,
     FriendImage image,
   ) async {
-    final caption = await showDialog<String>(
-      context: context,
-      builder: (_) => _CaptionDialog(initial: image.caption),
-    );
+    final caption = await showCaptionDialog(context, initial: image.caption);
     if (caption == null) return;
     await ref.read(friendsProvider.notifier).setCaption(friend, image, caption);
   }
@@ -240,52 +238,6 @@ class _CaptionBox extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Owns its controller so it lives until the dialog has fully closed.
-class _CaptionDialog extends StatefulWidget {
-  const _CaptionDialog({required this.initial});
-
-  final String initial;
-
-  @override
-  State<_CaptionDialog> createState() => _CaptionDialogState();
-}
-
-class _CaptionDialogState extends State<_CaptionDialog> {
-  late final _controller = TextEditingController(text: widget.initial);
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('IMAGE CONTEXT'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        minLines: 2,
-        maxLines: 6,
-        decoration: const InputDecoration(
-          hintText: 'e.g. the cake she loved at her 30th',
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('[CANCEL]'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, _controller.text),
-          child: const Text('[SAVE]'),
-        ),
-      ],
     );
   }
 }

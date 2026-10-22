@@ -36,9 +36,7 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
   late final _interval = TextEditingController(
     text: widget.friend?.callIntervalDays?.toString(),
   );
-  late final _notes = TextEditingController(
-    text: widget.friend?.notes ?? kNotesTemplate,
-  );
+  late final _notes = TextEditingController(text: widget.friend?.notes);
   bool _saving = false;
 
   @override
@@ -176,7 +174,7 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
                 return n == null || n < 1 ? 'a whole number ≥ 1' : null;
               },
             ),
-            _field(_notes, 'notes (markdown)', lines: 14),
+            _field(_notes, 'notes', lines: 14, hint: kNotesHint),
             if (widget.friend != null) ...[
               const SizedBox(height: 12),
               OutlinedButton(
@@ -194,6 +192,7 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
     TextEditingController controller,
     String label, {
     int lines = 1,
+    String? hint,
     TextInputType? keyboard,
     String? Function(String?)? validator,
   }) {
@@ -201,7 +200,15 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
-        decoration: InputDecoration(labelText: label, alignLabelWithHint: true),
+        decoration: InputDecoration(
+          labelText: label,
+          alignLabelWithHint: true,
+          hintText: hint,
+          // Keep the label out of the way so the hint is always visible.
+          floatingLabelBehavior: hint == null
+              ? null
+              : FloatingLabelBehavior.always,
+        ),
         minLines: lines,
         maxLines: lines == 1 ? 1 : null,
         keyboardType: lines > 1 && keyboard == null

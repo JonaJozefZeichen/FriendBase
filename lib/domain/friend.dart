@@ -142,16 +142,5 @@ String formatDate(DateTime t) =>
     '${t.year.toString().padLeft(4, '0')}-'
     '${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
 
-/// Template body for a new friend's notes.
-const kNotesTemplate = '''## Food
-
-## Allergies
-
-## Flowers
-
-## Movies / Shows
-
-## Interests
-
-## Gift ideas
-''';
+/// Shown in grey where a friend's notes are still empty: anything goes.
+const kNotesHint = 'Facts, Favourites, etc..';

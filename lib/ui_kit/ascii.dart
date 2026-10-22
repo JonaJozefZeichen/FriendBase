@@ -116,11 +116,3 @@ String callLabel(CallState state) => switch (state) {
 
 /// `0d`, `18d`, or `—` when never called.
 String daysLabel(int? days) => days == null ? '—' : '${days}d';
-
-/// Renders an image in greyscale so thumbnails match the monochrome look.
-const kGreyscale = ColorFilter.matrix(<double>[
-  0.2126, 0.7152, 0.0722, 0, 0, //
-  0.2126, 0.7152, 0.0722, 0, 0, //
-  0.2126, 0.7152, 0.0722, 0, 0, //
-  0, 0, 0, 1, 0, //
-]);

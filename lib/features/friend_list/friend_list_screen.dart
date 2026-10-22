@@ -7,6 +7,7 @@ import '../../domain/friend.dart';
 import '../../ui_kit/ascii.dart';
 import '../friend_detail/friend_detail_screen.dart';
 import '../friend_edit/friend_edit_screen.dart';
+import '../settings/settings_screen.dart';
 
 /// All friends, most in need of a call first.
 class FriendListScreen extends ConsumerStatefulWidget {
@@ -36,7 +37,18 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
     final problems = ref.watch(friendRepositoryProvider).problems;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('FRIENDBASE')),
+      appBar: AppBar(
+        title: const Text('FRIENDBASE'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+            child: const Tooltip(message: 'Options', child: Text('[≡]')),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Add friend',
         onPressed: () => Navigator.of(context)

@@ -30,6 +30,7 @@ ThemeData buildTheme(Brightness brightness) {
       onSurface: fg,
     ),
     scaffoldBackgroundColor: bg,
+    hintColor: fg.withValues(alpha: 0.45),
     splashFactory: NoSplash.splashFactory,
   );
 
@@ -92,6 +93,7 @@ ThemeData buildTheme(Brightness brightness) {
         borderSide: border.copyWith(width: 2),
       ),
       floatingLabelStyle: TextStyle(color: fg),
+      hintStyle: TextStyle(color: fg.withValues(alpha: 0.45)),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: fg,

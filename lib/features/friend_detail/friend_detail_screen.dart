@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/providers.dart';
 import '../../domain/call_status.dart';
 import '../../domain/friend.dart';
 import '../../ui_kit/ascii.dart';
+import '../../ui_kit/caption_dialog.dart';
 import '../friend_edit/friend_edit_screen.dart';
 import '../image_view/image_view_screen.dart';
 
@@ -50,24 +51,45 @@ class FriendDetailScreen extends ConsumerWidget {
     const gutter = EdgeInsets.fromLTRB(20, 16, 20, 0);
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _InfoBox(friend: friend)),
-            SliverPadding(
-              padding: gutter,
-              sliver: SliverToBoxAdapter(child: _ImageStrip(friend: friend)),
-            ),
-            SliverPadding(
-              padding: gutter.copyWith(bottom: 20),
-              sliver: SliverFillRemaining(
-                hasScrollBody: false,
-                child: AsciiBox(
-                  title: 'notes',
-                  fill: true,
-                  child: friend.notes.trim().isEmpty
-                      ? const Text('—')
-                      : SelectableText(friend.notes.trim()),
+        child: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(child: _InfoBox(friend: friend)),
+                SliverPadding(
+                  padding: gutter,
+                  sliver: SliverToBoxAdapter(
+                    child: _ImageStrip(friend: friend),
+                  ),
                 ),
+                SliverPadding(
+                  padding: gutter.copyWith(bottom: 20),
+                  sliver: SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: AsciiBox(
+                      title: 'notes',
+                      fill: true,
+                      child: friend.notes.trim().isEmpty
+                          ? Text(
+                              kNotesHint,
+                              style: TextStyle(
+                                color: Theme.of(context).hintColor,
+                              ),
+                            )
+                          : SelectableText(friend.notes.trim()),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Above the scroll view, so it stays put while scrolling.
+            Positioned(
+              left: 8,
+              top: 8,
+              child: SquareButton(
+                label: '<',
+                tooltip: 'Back',
+                onPressed: () => Navigator.of(context).maybePop(),
               ),
             ),
           ],
@@ -77,7 +99,7 @@ class FriendDetailScreen extends ConsumerWidget {
   }
 }
 
-/// The info box, with the back button sitting on its top-left corner.
+/// The info box. Its top-left corner sits under the fixed back button.
 class _InfoBox extends StatelessWidget {
   const _InfoBox({required this.friend});
 
@@ -89,89 +111,74 @@ class _InfoBox extends StatelessWidget {
     final birthday = friend.birthday;
     final today = DateTime.now();
 
-    return Stack(
-      children: [
-        Container(
-          margin: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: colors.onSurface),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      decoration: BoxDecoration(border: Border.all(color: colors.onSurface)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header row clears the back button overlapping the corner.
+          Row(
             children: [
-              // Header row clears the back button overlapping the corner.
-              Row(
-                children: [
-                  const SizedBox(width: 28),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        friend.name.toUpperCase(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          letterSpacing: 1,
-                        ),
-                      ),
+              const SizedBox(width: 28),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    friend.name.toUpperCase(),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      letterSpacing: 1,
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FriendEditScreen(friend: friend),
-                      ),
-                    ),
-                    child: const Text('[EDIT]'),
-                  ),
-                ],
+                ),
               ),
-              if (friend.nickname != null || friend.tags.isNotEmpty)
-                Text(
-                  [
-                    if (friend.nickname != null) 'aka ${friend.nickname}',
-                    if (friend.tags.isNotEmpty)
-                      friend.tags.map((t) => '#$t').join(' '),
-                  ].join('  ·  '),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FriendEditScreen(friend: friend),
+                  ),
                 ),
-              const SizedBox(height: 8),
-              for (final phone in friend.phones)
-                _LinkLine(
-                  label: 'tel',
-                  value: phone,
-                  uri: Uri(scheme: 'tel', path: phone),
-                ),
-              for (final email in friend.emails)
-                _LinkLine(
-                  label: 'mail',
-                  value: email,
-                  uri: Uri(scheme: 'mailto', path: email),
-                ),
-              if (friend.address != null) _InfoLine('addr', friend.address!),
-              if (birthday != null)
-                _InfoLine(
-                  'bday',
-                  '${birthday.format()}  ·  '
-                      '${_birthdayHint(birthday.daysUntil(today), birthday.turningAge(today))}',
-                ),
-              const SizedBox(height: 12),
-              const Divider(),
-              const SizedBox(height: 12),
-              _CallSection(friend: friend),
+                child: const Text('[EDIT]'),
+              ),
             ],
           ),
-        ),
-        Positioned(
-          left: 8,
-          top: 8,
-          child: SquareButton(
-            label: '<',
-            tooltip: 'Back',
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ),
-      ],
+          if (friend.nickname != null || friend.tags.isNotEmpty)
+            Text(
+              [
+                if (friend.nickname != null) 'aka ${friend.nickname}',
+                if (friend.tags.isNotEmpty)
+                  friend.tags.map((t) => '#$t').join(' '),
+              ].join('  ·  '),
+            ),
+          const SizedBox(height: 8),
+          for (final phone in friend.phones)
+            _LinkLine(
+              label: 'tel',
+              value: phone,
+              uri: Uri(scheme: 'tel', path: phone),
+            ),
+          for (final email in friend.emails)
+            _LinkLine(
+              label: 'mail',
+              value: email,
+              uri: Uri(scheme: 'mailto', path: email),
+            ),
+          if (friend.address != null) _InfoLine('addr', friend.address!),
+          if (birthday != null)
+            _InfoLine(
+              'bday',
+              '${birthday.format()}  ·  '
+                  '${_birthdayHint(birthday.daysUntil(today), birthday.turningAge(today))}',
+            ),
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 12),
+          _CallSection(friend: friend),
+        ],
+      ),
     );
   }
 
@@ -367,15 +374,12 @@ class _ImageStrip extends ConsumerWidget {
                 ),
                 child: file == null
                     ? const Center(child: Text('?'))
-                    : ColorFiltered(
-                        colorFilter: kGreyscale,
-                        child: Image.file(
-                          file,
-                          fit: BoxFit.cover,
-                          cacheWidth: 216,
-                          errorBuilder: (_, _, _) =>
-                              const Center(child: Text('?')),
-                        ),
+                    : Image.file(
+                        file,
+                        fit: BoxFit.cover,
+                        cacheWidth: 216,
+                        errorBuilder: (_, _, _) =>
+                            const Center(child: Text('?')),
                       ),
               ),
             );
@@ -411,15 +415,28 @@ class _ImageStrip extends ConsumerWidget {
       ),
     );
     if (source == null) return;
+    final notifier = ref.read(friendsProvider.notifier);
     try {
-      final picked = await ImagePicker().pickImage(
-        source: source,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
+      final path = await ref.read(imagePickerProvider)(source);
+      if (path == null) return;
+      final updated = await notifier.addImage(friend, path);
+      if (!context.mounted) return;
+      final added = updated.images.last;
+      final file = ref.read(friendRepositoryProvider).imageFile(updated, added);
+      final caption = await showCaptionDialog(
+        context,
+        dismissLabel: '[SKIP]',
+        preview: file == null
+            ? null
+            : Image.file(
+                file,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
       );
-      if (picked == null) return;
-      await ref.read(friendsProvider.notifier).addImage(friend, picked.path);
+      if (caption != null && caption.trim().isNotEmpty) {
+        await notifier.setCaption(updated, added, caption);
+      }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
