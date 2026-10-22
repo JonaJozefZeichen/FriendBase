@@ -32,7 +32,8 @@ class NotificationService {
     }
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        // A one-colour silhouette, as Android expects for the status bar.
+        android: AndroidInitializationSettings('@drawable/ic_stat_friendbase'),
         // Permission is asked when a reminder is switched on, not at launch.
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,
