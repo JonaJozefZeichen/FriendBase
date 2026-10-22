@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/call_status.dart';
 import '../../domain/friend.dart';
-import '../../ui_kit/ascii.dart';
+import '../../ui_kit/widgets.dart';
 import '../friend_detail/friend_detail_screen.dart';
 import '../friend_edit/friend_edit_screen.dart';
 import '../settings/settings_screen.dart';
 
-/// All friends, most in need of a call first.
+/// All friends, sorted as chosen in Options.
 class FriendListScreen extends ConsumerStatefulWidget {
   const FriendListScreen({super.key});
 
@@ -37,37 +37,32 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FRIENDBASE'),
+        title: const Text('FriendBase'),
         actions: [
-          TextButton(
+          IconButton(
+            tooltip: 'Options',
+            icon: const Icon(Icons.tune_rounded),
             onPressed: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-            child: const Tooltip(message: 'Options', child: Text('[≡]')),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Add friend',
         onPressed: () => Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => const FriendEditScreen())),
-        child: const Text('[+]', style: TextStyle(fontWeight: FontWeight.bold)),
+        child: const Icon(Icons.person_add_alt_1_rounded),
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: TextField(
               decoration: const InputDecoration(
-                prefixIcon: Center(
-                  widthFactor: 1,
-                  child: Padding(
-                    padding: EdgeInsets.only(left: 12, right: 8),
-                    child: Text('>'),
-                  ),
-                ),
-                hintText: 'search_',
+                prefixIcon: Icon(Icons.search_rounded),
+                hintText: 'Search',
                 isDense: true,
               ),
               onChanged: (v) => setState(() => _query = v),
@@ -75,17 +70,16 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
           ),
           if (problems.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
-                '!! ${problems.length} file(s) could not be read: '
+                '${problems.length} file(s) could not be read: '
                 '${problems.map((p) => p.folder).join(', ')}',
               ),
             ),
-          const Divider(),
           Expanded(
             child: friends.when(
-              loading: () => const Center(child: Text('loading...')),
-              error: (e, _) => Center(child: Text('!! $e')),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Something went wrong: $e')),
               data: (all) {
                 if (all.isEmpty) return const _EmptyState();
                 final settings = ref.watch(settingsProvider);
@@ -93,9 +87,10 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
                 return RefreshIndicator(
                   onRefresh: () => ref.read(friendsProvider.notifier).reload(),
                   child: ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 96),
+                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 96),
                     itemCount: visible.length,
-                    separatorBuilder: (_, _) => const Divider(),
+                    separatorBuilder: (_, _) =>
+                        const Divider(indent: 72, endIndent: 12),
                     itemBuilder: (_, i) => _FriendRow(
                       friend: visible[i],
                       compact: settings.compactList,
@@ -128,11 +123,19 @@ class _FriendRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final status = CallStatus.of(friend);
     final birthdayIn = friend.birthday?.daysUntil(DateTime.now());
     final birthdaySoon =
         showBirthday && birthdayIn != null && birthdayIn <= _birthdayWindowDays;
+    final subtitle = [
+      lastCallLabel(status.daysSince),
+      if (birthdaySoon)
+        birthdayIn == 0 ? 'Birthday today' : 'Birthday in ${birthdayIn}d',
+    ].join('  ·  ');
+
     return InkWell(
+      borderRadius: BorderRadius.circular(14),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => FriendDetailScreen(friendId: friend.id),
@@ -140,36 +143,69 @@ class _FriendRow extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: compact ? 8 : 16,
+          horizontal: 8,
+          vertical: compact ? 6 : 12,
         ),
         child: Row(
           children: [
-            Expanded(
-              child: Text(
-                friend.name.toUpperCase(),
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            if (birthdaySoon)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Text(
-                  birthdayIn == 0 ? 'b today' : 'b ${birthdayIn}d',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-            SizedBox(
-              width: 56,
-              child: Text(
-                daysLabel(status.daysSince),
-                textAlign: TextAlign.right,
-              ),
-            ),
+            _Avatar(name: friend.name, size: compact ? 36 : 44),
             const SizedBox(width: 12),
-            SizedBox(width: 24, child: Text(callMarker(status.state).trim())),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    friend.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (!compact || birthdaySoon)
+                    Text(
+                      subtitle,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            StatusPill(status.state),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A round placeholder with the friend's initials.
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.name, required this.size});
+
+  final String name;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final initials = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .take(2)
+        .map((p) => p.characters.first.toUpperCase())
+        .join();
+    return ExcludeSemantics(
+      child: CircleAvatar(
+        radius: size / 2,
+        backgroundColor: colors.surfaceContainerHigh,
+        foregroundColor: colors.onSurface,
+        child: Text(
+          initials,
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: size * 0.36),
         ),
       ),
     );
@@ -181,17 +217,27 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A real box rather than box-drawing characters, which only line up
-    // in a monospace font.
-    return const Center(
-      child: SizedBox(
-        width: 240,
-        child: AsciiBox(
-          title: 'empty',
-          child: Text(
-            'no friends yet.\ntap [+] to add.',
-            textAlign: TextAlign.center,
-          ),
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.people_outline_rounded,
+              size: 56,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 12),
+            Text('No friends yet', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Tap the button below to add someone.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
         ),
       ),
     );

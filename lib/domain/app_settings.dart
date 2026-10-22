@@ -23,6 +23,7 @@ class AppSettings {
     this.sort = ListSort.urgency,
     this.remindBirthdays = false,
     this.birthdayDaysBefore = 3,
+    this.remindBirthdayOnDay = false,
     this.remindOverdueCalls = false,
     this.reminderHour = 9,
     this.reminderMinute = 0,
@@ -40,13 +41,17 @@ class AppSettings {
   final ListSort sort;
   final bool remindBirthdays;
   final int birthdayDaysBefore;
+
+  /// A second birthday reminder on the day itself.
+  final bool remindBirthdayOnDay;
   final bool remindOverdueCalls;
 
   /// Time of day reminders arrive.
   final int reminderHour;
   final int reminderMinute;
 
-  bool get anyReminders => remindBirthdays || remindOverdueCalls;
+  bool get anyReminders =>
+      remindBirthdays || remindBirthdayOnDay || remindOverdueCalls;
 
   AppSettings copyWith({
     AppTheme? theme,
@@ -57,6 +62,7 @@ class AppSettings {
     ListSort? sort,
     bool? remindBirthdays,
     int? birthdayDaysBefore,
+    bool? remindBirthdayOnDay,
     bool? remindOverdueCalls,
     int? reminderHour,
     int? reminderMinute,
@@ -70,6 +76,7 @@ class AppSettings {
       sort: sort ?? this.sort,
       remindBirthdays: remindBirthdays ?? this.remindBirthdays,
       birthdayDaysBefore: birthdayDaysBefore ?? this.birthdayDaysBefore,
+      remindBirthdayOnDay: remindBirthdayOnDay ?? this.remindBirthdayOnDay,
       remindOverdueCalls: remindOverdueCalls ?? this.remindOverdueCalls,
       reminderHour: reminderHour ?? this.reminderHour,
       reminderMinute: reminderMinute ?? this.reminderMinute,
@@ -89,6 +96,7 @@ class AppSettings {
     'sort': sort.name,
     'remind_birthdays': remindBirthdays,
     'birthday_days_before': birthdayDaysBefore,
+    'remind_birthday_on_day': remindBirthdayOnDay,
     'remind_overdue_calls': remindOverdueCalls,
     'reminder_time': reminderTimeLabel,
   };
@@ -124,6 +132,10 @@ class AppSettings {
       birthdayDaysBefore: kBirthdayDaysBefore.contains(days)
           ? days
           : d.birthdayDaysBefore,
+      remindBirthdayOnDay: pick(
+        'remind_birthday_on_day',
+        d.remindBirthdayOnDay,
+      ),
       remindOverdueCalls: pick('remind_overdue_calls', d.remindOverdueCalls),
       reminderHour: validTime ? hour : d.reminderHour,
       reminderMinute: validTime ? minute : d.reminderMinute,

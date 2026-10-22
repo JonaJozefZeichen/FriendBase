@@ -36,6 +36,7 @@ void main() {
       sort: ListSort.birthday,
       remindBirthdays: true,
       birthdayDaysBefore: 7,
+      remindBirthdayOnDay: true,
       remindOverdueCalls: true,
       reminderHour: 18,
       reminderMinute: 5,

@@ -6,11 +6,15 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../domain/app_settings.dart';
-import '../../ui_kit/ascii.dart';
+import '../../ui_kit/widgets.dart';
 
 const _repoUrl = 'https://github.com/JonaJozefZeichen/FriendBase';
+const _author = 'Jona Jožef Zeichen';
+const _legalese =
+    '© 2026 $_author\n'
+    'Released under the MIT License.';
 
-/// App options, opened from the `[≡]` button on the friend list.
+/// App options, opened from the button on the friend list.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -21,120 +25,91 @@ class SettingsScreen extends ConsumerWidget {
     void update(AppSettings Function(AppSettings) change) =>
         notifier.update(change);
 
-    const gap = SizedBox(height: 16);
+    const gap = SizedBox(height: 24);
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      appBar: AppBar(title: const Text('Options')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          SectionCard(
+            title: 'Theme',
+            child: _ThemeGrid(
+              selected: settings.theme,
+              onSelected: (t) => update((s) => s.copyWith(theme: t)),
+            ),
+          ),
+          gap,
+          SectionCard(
+            title: 'Display',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(60, 14, 0, 24),
-                  child: Text(
-                    'OPTIONS',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      letterSpacing: 2,
-                    ),
-                  ),
+                const _Label('Font'),
+                SegmentedChoice<AppFont>(
+                  options: [
+                    for (final (font, label) in [
+                      (AppFont.system, 'System'),
+                      (AppFont.serif, 'Serif'),
+                      (AppFont.readable, 'Readable'),
+                      (AppFont.mono, 'Mono'),
+                    ])
+                      (font, label, TextStyle(fontFamily: fontFamilyFor(font))),
+                  ],
+                  selected: settings.font,
+                  onSelected: (f) => update((s) => s.copyWith(font: f)),
                 ),
-                AsciiBox(
-                  title: 'theme',
-                  child: _ThemeGrid(
-                    selected: settings.theme,
-                    onSelected: (t) => update((s) => s.copyWith(theme: t)),
-                  ),
+                const SizedBox(height: 16),
+                const _Label('Text size'),
+                SegmentedChoice<double>(
+                  options: [
+                    for (final MapEntry(key: label, value: scale)
+                        in kTextScales.entries)
+                      (scale, label, null),
+                  ],
+                  selected: settings.textScale,
+                  onSelected: (v) => update((s) => s.copyWith(textScale: v)),
                 ),
-                gap,
-                AsciiBox(
-                  title: 'display',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const _Label('font'),
-                      ChoiceRow<AppFont>(
-                        options: [
-                          for (final (font, label) in [
-                            (AppFont.system, 'System'),
-                            (AppFont.serif, 'Serif'),
-                            (AppFont.readable, 'Readable'),
-                            (AppFont.mono, 'Mono'),
-                          ])
-                            (
-                              font,
-                              label,
-                              TextStyle(fontFamily: fontFamilyFor(font)),
-                            ),
-                        ],
-                        selected: settings.font,
-                        onSelected: (f) => update((s) => s.copyWith(font: f)),
-                      ),
-                      const SizedBox(height: 12),
-                      const _Label('text size'),
-                      ChoiceRow<double>(
-                        options: [
-                          for (final MapEntry(key: label, value: scale)
-                              in kTextScales.entries)
-                            (scale, label, null),
-                        ],
-                        selected: settings.textScale,
-                        onSelected: (v) =>
-                            update((s) => s.copyWith(textScale: v)),
-                      ),
-                      const SizedBox(height: 8),
-                      AsciiToggle(
-                        label: 'compact list',
-                        value: settings.compactList,
-                        onChanged: (v) =>
-                            update((s) => s.copyWith(compactList: v)),
-                      ),
-                      AsciiToggle(
-                        label: 'show upcoming birthdays in list',
-                        value: settings.birthdaysInList,
-                        onChanged: (v) =>
-                            update((s) => s.copyWith(birthdaysInList: v)),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 8),
+                ToggleRow(
+                  label: 'Compact list',
+                  subtitle: 'Smaller rows, fewer details',
+                  value: settings.compactList,
+                  onChanged: (v) => update((s) => s.copyWith(compactList: v)),
                 ),
-                gap,
-                AsciiBox(
-                  title: 'list',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const _Label('sort by'),
-                      ChoiceRow<ListSort>(
-                        options: const [
-                          (ListSort.urgency, 'Call due', null),
-                          (ListSort.name, 'Name', null),
-                          (ListSort.birthday, 'Birthday', null),
-                        ],
-                        selected: settings.sort,
-                        onSelected: (v) => update((s) => s.copyWith(sort: v)),
-                      ),
-                    ],
-                  ),
+                ToggleRow(
+                  label: 'Upcoming birthdays in list',
+                  subtitle: 'Within the next 14 days',
+                  value: settings.birthdaysInList,
+                  onChanged: (v) =>
+                      update((s) => s.copyWith(birthdaysInList: v)),
                 ),
-                gap,
-                _RemindersBox(settings: settings, update: update),
-                gap,
-                const _AboutBox(),
               ],
             ),
-            Positioned(
-              left: 8,
-              top: 8,
-              child: SquareButton(
-                label: '<',
-                tooltip: 'Back',
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
+          ),
+          gap,
+          SectionCard(
+            title: 'List',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _Label('Sort by'),
+                SegmentedChoice<ListSort>(
+                  options: const [
+                    (ListSort.urgency, 'Call due', null),
+                    (ListSort.name, 'Name', null),
+                    (ListSort.birthday, 'Birthday', null),
+                  ],
+                  selected: settings.sort,
+                  onSelected: (v) => update((s) => s.copyWith(sort: v)),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          gap,
+          _RemindersCard(settings: settings, update: update),
+          gap,
+          const _AboutCard(),
+        ],
       ),
     );
   }
@@ -147,17 +122,20 @@ class _Label extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(left: 2, bottom: 8),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
 }
 
-/// One tile per theme, painted in its own colours.
+/// One rounded tile per theme, painted in its own colours.
 class _ThemeGrid extends StatelessWidget {
   const _ThemeGrid({required this.selected, required this.onSelected});
 
@@ -169,7 +147,7 @@ class _ThemeGrid extends StatelessWidget {
     final outline = Theme.of(context).colorScheme.onSurface;
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 8.0;
+        const spacing = 10.0;
         final width = (constraints.maxWidth - spacing * 2) / 3;
         return Wrap(
           spacing: spacing,
@@ -181,18 +159,24 @@ class _ThemeGrid extends StatelessWidget {
                 selected: theme == selected,
                 child: GestureDetector(
                   onTap: () => onSelected(theme),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
                     width: width,
-                    height: 56,
+                    height: 60,
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: outline,
-                        width: theme == selected ? 3 : 1,
+                        color: theme == selected ? outline : Colors.transparent,
+                        width: 2,
                       ),
                     ),
-                    child: theme == AppTheme.system
-                        ? _systemSwatch()
-                        : _swatch(kPalettes[theme]!),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: theme == AppTheme.system
+                          ? _systemSwatch()
+                          : _swatch(kPalettes[theme]!),
+                    ),
                   ),
                 ),
               ),
@@ -207,7 +191,7 @@ class _ThemeGrid extends StatelessWidget {
     alignment: Alignment.center,
     child: Text(
       p.name,
-      style: TextStyle(color: p.fg, fontWeight: FontWeight.bold),
+      style: TextStyle(color: p.fg, fontWeight: FontWeight.w600),
     ),
   );
 
@@ -223,11 +207,14 @@ class _ThemeGrid extends StatelessWidget {
       ),
       Center(
         child: Container(
-          color: kLight.bg,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: kLight.bg,
+            borderRadius: BorderRadius.circular(99),
+          ),
           child: Text(
             'System',
-            style: TextStyle(color: kLight.fg, fontWeight: FontWeight.bold),
+            style: TextStyle(color: kLight.fg, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -235,28 +222,30 @@ class _ThemeGrid extends StatelessWidget {
   );
 }
 
-class _RemindersBox extends ConsumerWidget {
-  const _RemindersBox({required this.settings, required this.update});
+class _RemindersCard extends ConsumerWidget {
+  const _RemindersCard({required this.settings, required this.update});
 
   final AppSettings settings;
   final void Function(AppSettings Function(AppSettings)) update;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AsciiBox(
-      title: 'reminders',
+    return SectionCard(
+      title: 'Reminders',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AsciiToggle(
-            label: 'upcoming birthdays',
+          ToggleRow(
+            label: 'Birthdays ahead',
+            subtitle: 'A few days before, to plan something',
             value: settings.remindBirthdays,
             onChanged: (v) =>
                 _toggle(context, ref, v, (s) => s.copyWith(remindBirthdays: v)),
           ),
           if (settings.remindBirthdays) ...[
-            const _Label('days before'),
-            ChoiceRow<int>(
+            const SizedBox(height: 4),
+            const _Label('Days before'),
+            SegmentedChoice<int>(
               options: [for (final d in kBirthdayDaysBefore) (d, '$d', null)],
               selected: settings.birthdayDaysBefore,
               onSelected: (d) =>
@@ -264,8 +253,20 @@ class _RemindersBox extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
           ],
-          AsciiToggle(
-            label: 'overdue calls',
+          ToggleRow(
+            label: 'Birthdays on the day',
+            subtitle: 'A nudge to send your wishes',
+            value: settings.remindBirthdayOnDay,
+            onChanged: (v) => _toggle(
+              context,
+              ref,
+              v,
+              (s) => s.copyWith(remindBirthdayOnDay: v),
+            ),
+          ),
+          ToggleRow(
+            label: 'Overdue calls',
+            subtitle: 'When a friend passes their call interval',
             value: settings.remindOverdueCalls,
             onChanged: (v) => _toggle(
               context,
@@ -274,16 +275,28 @@ class _RemindersBox extends ConsumerWidget {
               (s) => s.copyWith(remindOverdueCalls: v),
             ),
           ),
+          const Divider(height: 24),
           InkWell(
+            borderRadius: BorderRadius.circular(12),
             onTap: () => _pickTime(context),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
-                  const Expanded(child: Text('time of day')),
-                  Text(
-                    '[ ${settings.reminderTimeLabel} ]',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  const Expanded(child: Text('Time of day')),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      settings.reminderTimeLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ],
               ),
@@ -315,8 +328,8 @@ class _RemindersBox extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'notifications are off for FriendBase. '
-                'allow them in your phone settings.',
+                'Notifications are off for FriendBase. '
+                'You can allow them in your phone settings.',
               ),
             ),
           );
@@ -343,72 +356,72 @@ class _RemindersBox extends ConsumerWidget {
   }
 }
 
-class _AboutBox extends ConsumerWidget {
-  const _AboutBox();
+class _AboutCard extends ConsumerWidget {
+  const _AboutCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
     final version = ref.watch(appVersionProvider).value ?? '…';
     final repo = ref.watch(friendRepositoryProvider);
     final count = ref.watch(friendsProvider).value?.length ?? 0;
     final problems = repo.problems;
     final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
 
-    return AsciiBox(
-      title: 'about',
+    return SectionCard(
+      title: 'About',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'FriendBase $version',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: 8),
+          Text('Made by $_author', style: muted),
+          const SizedBox(height: 12),
           const Text(
             'Everything stays on this phone. Each friend is a plain Markdown '
             'file (friends/<name>/friend.md) with their images next to it, '
             'readable in Obsidian or any text editor.',
+            style: TextStyle(height: 1.4),
           ),
-          const SizedBox(height: 12),
-          const _Label('vault'),
-          SelectableText(
-            repo.storage.root.path,
-            style: const TextStyle(fontSize: 12),
-          ),
+          const SizedBox(height: 16),
+          const _Label('Vault'),
+          SelectableText(repo.storage.root.path, style: muted),
           if (isIOS) ...[
             const SizedBox(height: 4),
-            const Text(
-              'Files app → On My iPhone → FriendBase',
-              style: TextStyle(fontSize: 12),
-            ),
+            Text('Files app → On My iPhone → FriendBase', style: muted),
           ],
           const SizedBox(height: 12),
           Text('$count friend${count == 1 ? '' : 's'}'),
           if (problems.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('!! ${problems.length} file(s) could not be read:'),
+            Text('${problems.length} file(s) could not be read:'),
             for (final p in problems)
-              Text(
-                '· ${p.folder}: ${p.message}',
-                style: const TextStyle(fontSize: 12),
-              ),
+              Text('· ${p.folder}: ${p.message}', style: muted),
           ],
           const SizedBox(height: 16),
-          OutlinedButton(
+          OutlinedButton.icon(
             onPressed: () => launchUrl(
               Uri.parse(_repoUrl),
               mode: LaunchMode.externalApplication,
             ),
-            child: const Text('[ SOURCE CODE ]'),
+            icon: const Icon(Icons.code_rounded),
+            label: const Text('Source code'),
           ),
           const SizedBox(height: 8),
-          OutlinedButton(
+          OutlinedButton.icon(
             onPressed: () => showLicensePage(
               context: context,
               applicationName: 'FriendBase',
               applicationVersion: version,
+              applicationLegalese: _legalese,
             ),
-            child: const Text('[ LICENCES ]'),
+            icon: const Icon(Icons.description_outlined),
+            label: const Text('Licences'),
           ),
         ],
       ),

@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 /// Asks for an image's context. Returns the text, or null if dismissed.
 ///
 /// [preview] shows the image being described, e.g. right after adding it;
-/// [dismissLabel] reads `[SKIP]` there instead of `[CANCEL]`.
+/// [dismissLabel] reads `Skip` there instead of `Cancel`.
 Future<String?> showCaptionDialog(
   BuildContext context, {
   String initial = '',
   Widget? preview,
-  String dismissLabel = '[CANCEL]',
+  String dismissLabel = 'Cancel',
 }) {
   return showDialog<String>(
     context: context,
@@ -48,14 +48,17 @@ class _CaptionDialogState extends State<_CaptionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('IMAGE CONTEXT'),
+      title: const Text('What is this image about?'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (widget.preview != null) ...[
-              SizedBox(height: 160, child: widget.preview),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(height: 160, child: widget.preview),
+              ),
               const SizedBox(height: 12),
             ],
             TextField(
@@ -77,7 +80,7 @@ class _CaptionDialogState extends State<_CaptionDialog> {
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _controller.text),
-          child: const Text('[SAVE]'),
+          child: const Text('Save'),
         ),
       ],
     );

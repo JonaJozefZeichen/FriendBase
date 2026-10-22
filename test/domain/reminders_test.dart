@@ -63,6 +63,36 @@ void main() {
       expect(r.when, DateTime(2026, 12, 30, 9));
     });
 
+    test('on the day, alone or together with the early one', () {
+      const onDay = AppSettings(remindBirthdayOnDay: true);
+      final only = planReminders(
+        [friend('Anna', birthday: '1994-10-29')],
+        onDay,
+        now: now,
+      ).single;
+      expect(only.when, DateTime(2026, 10, 29, 9));
+      expect(only.body, 'Today — turns 32');
+
+      final both = planReminders(
+        [friend('Anna', birthday: '1994-10-29')],
+        onDay.copyWith(remindBirthdays: true),
+        now: now,
+      );
+      expect(both.map((r) => r.when), [
+        DateTime(2026, 10, 26, 9),
+        DateTime(2026, 10, 29, 9),
+      ]);
+    });
+
+    test('on the day, after the reminder time → next year', () {
+      final r = planReminders(
+        [friend('Anna', birthday: '1994-10-22')],
+        const AppSettings(remindBirthdayOnDay: true),
+        now: now,
+      ).single;
+      expect(r.when, DateTime(2027, 10, 22, 9));
+    });
+
     test('Feb 29 in a non-leap year uses Feb 28', () {
       final r = planReminders(
         [friend('Leap', birthday: '2000-02-29')],

@@ -43,27 +43,34 @@ List<PlannedReminder> planReminders(
 
   for (final friend in friends) {
     final birthday = friend.birthday;
-    if (settings.remindBirthdays && birthday != null) {
-      final days = settings.birthdayDaysBefore;
-      var occurrence = birthday.nextOccurrence(at);
-      var when = atReminderTime(occurrence, -days);
-      if (!when.isAfter(at)) {
-        // This year's reminder has passed; plan next year's.
-        occurrence = birthday.nextOccurrence(
-          DateTime(occurrence.year, occurrence.month, occurrence.day + 1),
-        );
-        when = atReminderTime(occurrence, -days);
+    if (birthday != null) {
+      // One reminder [daysBefore] days ahead and/or one on the day (0).
+      for (final days in [
+        if (settings.remindBirthdays) settings.birthdayDaysBefore,
+        if (settings.remindBirthdayOnDay) 0,
+      ]) {
+        var occurrence = birthday.nextOccurrence(at);
+        var when = atReminderTime(occurrence, -days);
+        if (!when.isAfter(at)) {
+          // This year's reminder has passed; plan next year's.
+          occurrence = birthday.nextOccurrence(
+            DateTime(occurrence.year, occurrence.month, occurrence.day + 1),
+          );
+          when = atReminderTime(occurrence, -days);
+        }
+        final age = birthday.year == null
+            ? ''
+            : ' — turns ${occurrence.year - birthday.year!}';
+        planned.add((
+          when: when,
+          title: '${friend.name}\'s birthday',
+          body: switch (days) {
+            0 => 'Today$age',
+            1 => 'Tomorrow$age',
+            _ => 'In $days days (${formatDate(occurrence)})$age',
+          },
+        ));
       }
-      final age = birthday.year == null
-          ? ''
-          : ' — turns ${occurrence.year - birthday.year!}';
-      planned.add((
-        when: when,
-        title: '${friend.name}\'s birthday',
-        body: days == 1
-            ? 'Tomorrow$age'
-            : 'In $days days (${formatDate(occurrence)})$age',
-      ));
     }
 
     final lastCall = friend.lastCall;

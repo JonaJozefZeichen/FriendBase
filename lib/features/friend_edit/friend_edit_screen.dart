@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/birthday.dart';
+import '../../domain/call_status.dart';
 import '../../domain/friend.dart';
 import '../../domain/ulid.dart';
 
@@ -83,7 +84,7 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('!! could not save: $e')));
+          .showSnackBar(SnackBar(content: Text('Could not save: $e')));
     }
   }
 
@@ -97,11 +98,11 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('[CANCEL]'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('[DELETE]'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -115,65 +116,75 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.friend == null ? 'NEW FRIEND' : 'EDIT'),
+        title: Text(widget.friend == null ? 'New friend' : 'Edit friend'),
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
-            child: const Text('[SAVE]'),
+            child: const Text('Save'),
           ),
         ],
       ),
       body: Form(
         key: _form,
         child: ListView(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             _field(
               _name,
-              'name *',
+              'Name',
+              icon: Icons.person_outline_rounded,
               validator: (v) =>
-                  (v ?? '').trim().isEmpty ? 'name is required' : null,
+                  (v ?? '').trim().isEmpty ? 'Please enter a name' : null,
             ),
-            _field(_nickname, 'nickname'),
+            _field(_nickname, 'Nickname', icon: Icons.badge_outlined),
             _field(
               _birthday,
-              'birthday (YYYY-MM-DD or --MM-DD)',
+              'Birthday',
+              icon: Icons.cake_outlined,
+              helper: 'YYYY-MM-DD, or --MM-DD without the year',
               keyboard: TextInputType.datetime,
               validator: (v) =>
                   (v ?? '').trim().isEmpty || Birthday.tryParse(v) != null
                   ? null
-                  : 'use 1994-03-12, or --03-12 without year',
+                  : 'Use 1994-03-12, or --03-12 without the year',
             ),
             _field(
               _phones,
-              'phones (one per line)',
+              'Phone numbers',
+              icon: Icons.phone_outlined,
+              helper: 'One per line',
               keyboard: TextInputType.phone,
               lines: 2,
             ),
             _field(
               _emails,
-              'emails (one per line)',
+              'Emails',
+              icon: Icons.mail_outline_rounded,
+              helper: 'One per line',
               keyboard: TextInputType.emailAddress,
               lines: 2,
             ),
-            _field(_address, 'address', lines: 2),
+            _field(_address, 'Address', icon: Icons.home_outlined, lines: 2),
             _field(
               _interval,
-              'call every N days (empty = default)',
+              'Call every … days',
+              icon: Icons.update_rounded,
+              helper: 'Leave empty for the default ($kDefaultCallIntervalDays)',
               keyboard: TextInputType.number,
               validator: (v) {
                 final s = (v ?? '').trim();
                 if (s.isEmpty) return null;
                 final n = int.tryParse(s);
-                return n == null || n < 1 ? 'a whole number ≥ 1' : null;
+                return n == null || n < 1 ? 'A whole number, 1 or more' : null;
               },
             ),
-            _field(_notes, 'notes', lines: 14, hint: kNotesHint),
+            _field(_notes, 'Notes', lines: 12, hint: kNotesHint),
             if (widget.friend != null) ...[
-              const SizedBox(height: 12),
-              OutlinedButton(
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
                 onPressed: _saving ? null : _confirmDelete,
-                child: const Text('[ DELETE FRIEND ]'),
+                icon: const Icon(Icons.delete_outline_rounded),
+                label: const Text('Delete friend'),
               ),
             ],
           ],
@@ -187,17 +198,21 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
     String label, {
     int lines = 1,
     String? hint,
+    String? helper,
+    IconData? icon,
     TextInputType? keyboard,
     String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(
           labelText: label,
           alignLabelWithHint: true,
           hintText: hint,
+          helperText: helper,
+          prefixIcon: icon == null ? null : Icon(icon),
           // Keep the label out of the way so the hint is always visible.
           floatingLabelBehavior: hint == null
               ? null

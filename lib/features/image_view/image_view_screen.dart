@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../app/theme.dart';
 import '../../domain/friend.dart';
-import '../../ui_kit/ascii.dart';
+import '../../ui_kit/widgets.dart';
 import '../../ui_kit/caption_dialog.dart';
 
-/// A friend's images full screen: swipe or use `<` `>` to move between them,
+/// A friend's images full screen: swipe or use the arrows to move between them,
 /// tap the caption box at the bottom to write what the image is about.
 class ImageViewScreen extends ConsumerStatefulWidget {
   const ImageViewScreen({
@@ -47,97 +46,102 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
     final repo = ref.watch(friendRepositoryProvider);
     final index = images.isEmpty ? 0 : _index.clamp(0, images.length - 1);
 
-    // Always dark, so photos stand out; the monochrome theme just inverts.
-    return Theme(
-      data: buildTheme(
-        kDark,
-        font: ref.watch(settingsProvider.select((s) => s.font)),
-      ),
-      child: Builder(
-        builder: (context) => Scaffold(
-          body: Stack(
-            children: [
-              if (friend == null || images.isEmpty)
-                const Center(child: Text('no images.'))
-              else
-                PageView.builder(
-                  controller: _pages,
-                  itemCount: images.length,
-                  onPageChanged: (i) => setState(() => _index = i),
-                  itemBuilder: (_, i) {
-                    final file = repo.imageFile(friend, images[i]);
-                    return InteractiveViewer(
-                      maxScale: 4,
-                      child: Center(
-                        child: file == null
-                            ? const Text('? unsafe path')
-                            : Image.file(
-                                file,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) =>
-                                    Text('? missing ${images[i].file}'),
-                              ),
-                      ),
-                    );
-                  },
-                ),
-              if (index > 0)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _Arrow(label: '<', onTap: () => _go(index - 1)),
-                ),
-              if (index < images.length - 1)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: _Arrow(label: '>', onTap: () => _go(index + 1)),
-                ),
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      SquareButton(
-                        label: '<',
-                        tooltip: 'Back',
-                        onPressed: () => Navigator.of(context).maybePop(),
-                      ),
-                      Expanded(
-                        child: Text(
-                          images.isEmpty
-                              ? ''
-                              : '${index + 1} / ${images.length}',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      if (friend != null && images.isNotEmpty)
-                        TextButton(
-                          onPressed: () =>
-                              _confirmRemove(context, friend, images[index]),
-                          child: const Text('[DELETE]'),
-                        )
-                      else
-                        const SizedBox(width: 48),
-                    ],
+    // Uses the app's chosen theme, like every other screen.
+    return Scaffold(
+      body: Stack(
+        children: [
+          if (friend == null || images.isEmpty)
+            const Center(child: Text('No images'))
+          else
+            PageView.builder(
+              controller: _pages,
+              itemCount: images.length,
+              onPageChanged: (i) => setState(() => _index = i),
+              itemBuilder: (_, i) {
+                final file = repo.imageFile(friend, images[i]);
+                return InteractiveViewer(
+                  maxScale: 4,
+                  child: Center(
+                    child: file == null
+                        ? const Text('This image path is not allowed')
+                        : Image.file(
+                            file,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) =>
+                                Text('Missing file: ${images[i].file}'),
+                          ),
                   ),
+                );
+              },
+            ),
+          if (index > 0)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: FloatingRoundButton(
+                  icon: Icons.chevron_left_rounded,
+                  tooltip: 'Previous image',
+                  onPressed: () => _go(index - 1),
                 ),
               ),
-              if (friend != null && images.isNotEmpty)
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 0,
-                  child: SafeArea(
-                    top: false,
-                    minimum: const EdgeInsets.only(bottom: 16),
-                    child: _CaptionBox(
-                      caption: images[index].caption,
-                      onTap: () => _editCaption(context, friend, images[index]),
+            ),
+          if (index < images.length - 1)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FloatingRoundButton(
+                  icon: Icons.chevron_right_rounded,
+                  tooltip: 'Next image',
+                  onPressed: () => _go(index + 1),
+                ),
+              ),
+            ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  const BackRoundButton(),
+                  Expanded(
+                    // heightFactor keeps this row as tall as its buttons;
+                    // a plain Center would stretch it to the full screen.
+                    child: Center(
+                      heightFactor: 1,
+                      child: images.isEmpty
+                          ? const SizedBox.shrink()
+                          : _Pill('${index + 1} / ${images.length}'),
                     ),
                   ),
-                ),
-            ],
+                  if (friend != null && images.isNotEmpty)
+                    FloatingRoundButton(
+                      icon: Icons.delete_outline_rounded,
+                      tooltip: 'Delete image',
+                      onPressed: () =>
+                          _confirmRemove(context, friend, images[index]),
+                    )
+                  else
+                    const SizedBox(width: 44),
+                ],
+              ),
+            ),
           ),
-        ),
+          if (friend != null && images.isNotEmpty)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                minimum: const EdgeInsets.only(bottom: 16),
+                child: _CaptionCard(
+                  caption: images[index].caption,
+                  onTap: () => _editCaption(context, friend, images[index]),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -165,11 +169,11 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('[CANCEL]'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('[DELETE]'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -183,32 +187,28 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
   }
 }
 
-class _Arrow extends StatelessWidget {
-  const _Arrow({required this.label, required this.onTap});
+class _Pill extends StatelessWidget {
+  const _Pill(this.text);
 
-  final String label;
-  final VoidCallback onTap;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: SizedBox(
-        width: 56,
-        height: 96,
-        child: Center(
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-          ),
-        ),
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHigh.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(99),
       ),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
     );
   }
 }
 
-class _CaptionBox extends StatelessWidget {
-  const _CaptionBox({required this.caption, required this.onTap});
+/// The image's context, floating over the bottom of the image.
+class _CaptionCard extends StatelessWidget {
+  const _CaptionCard({required this.caption, required this.onTap});
 
   final String caption;
   final VoidCallback onTap;
@@ -217,26 +217,36 @@ class _CaptionBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Material(
-      color: colors.surface.withValues(alpha: 0.85),
-      shape: Border.all(color: colors.onSurface),
+      color: colors.surface.withValues(alpha: 0.92),
+      elevation: 3,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48, maxHeight: 160),
-            child: SingleChildScrollView(
-              child: SizedBox(
-                width: double.infinity,
-                child: Text(
-                  caption.isEmpty ? 'tap to add context_' : caption,
-                  style: caption.isEmpty
-                      ? TextStyle(
-                          color: colors.onSurface.withValues(alpha: 0.6),
-                        )
-                      : null,
+            constraints: const BoxConstraints(minHeight: 24, maxHeight: 160),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Text(
+                      caption.isEmpty ? 'Tap to add context' : caption,
+                      style: caption.isEmpty
+                          ? TextStyle(color: Theme.of(context).hintColor)
+                          : const TextStyle(height: 1.4),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: colors.onSurfaceVariant,
+                ),
+              ],
             ),
           ),
         ),

@@ -123,7 +123,7 @@ void main() {
   testWidgets('empty state', (tester) async {
     await tester.pumpWidget(_app(_MemoryRepository([])));
     await tester.pumpAndSettle();
-    expect(find.textContaining('no friends yet'), findsOneWidget);
+    expect(find.text('No friends yet'), findsOneWidget);
   });
 
   testWidgets('list sorts the most overdue first and filters by search', (
@@ -132,10 +132,10 @@ void main() {
     await tester.pumpWidget(
       _app(
         _MemoryRepository([
-          Friend(id: '1', name: 'Recent', calls: [formatCallTime(today)]),
+          Friend(id: '1', name: 'Rita', calls: [formatCallTime(today)]),
           Friend(
             id: '2',
-            name: 'Overdue',
+            name: 'Otto',
             calls: [formatCallTime(today.subtract(const Duration(days: 90)))],
           ),
         ]),
@@ -143,15 +143,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final recentY = tester.getTopLeft(find.text('RECENT')).dy;
-    final overdueY = tester.getTopLeft(find.text('OVERDUE')).dy;
+    final recentY = tester.getTopLeft(find.text('Rita')).dy;
+    final overdueY = tester.getTopLeft(find.text('Otto')).dy;
     expect(overdueY, lessThan(recentY));
-    expect(find.text('!!'), findsOneWidget);
+    expect(find.text('Overdue'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'rec');
+    await tester.enterText(find.byType(TextField), 'rit');
     await tester.pumpAndSettle();
-    expect(find.text('RECENT'), findsOneWidget);
-    expect(find.text('OVERDUE'), findsNothing);
+    expect(find.text('Rita'), findsOneWidget);
+    expect(find.text('Otto'), findsNothing);
   });
 
   testWidgets('add a friend, open them and log a call', (tester) async {
@@ -161,26 +161,23 @@ void main() {
 
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'name *'),
-      'Marko',
-    );
-    await tester.tap(find.text('[SAVE]'));
+    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Marko');
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(repo.friends.single.name, 'Marko');
     expect(repo.friends.single.notes, isEmpty);
 
-    await tester.tap(find.text('MARKO'));
+    await tester.tap(find.text('Marko'));
     await tester.pumpAndSettle();
-    expect(find.text('status NEVER CALLED'), findsOneWidget);
+    expect(find.text('Never called'), findsOneWidget);
 
-    await tester.tap(find.text('[ CALLED TODAY ]'));
+    await tester.tap(find.text('Called today'));
     await tester.pumpAndSettle();
-    expect(find.text('status OK'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
     expect(repo.friends.single.calls, hasLength(1));
 
-    await tester.tap(find.text('UNDO'));
+    await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
     expect(repo.friends.single.calls, isEmpty);
   });
@@ -191,14 +188,14 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'name *'), 'A');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'A');
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'birthday (YYYY-MM-DD or --MM-DD)'),
+      find.widgetWithText(TextFormField, 'Birthday'),
       '12.03.1994',
     );
-    await tester.tap(find.text('[SAVE]'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('use 1994-03-12'), findsOneWidget);
+    expect(find.textContaining('Use 1994-03-12'), findsOneWidget);
   });
 
   testWidgets('friend view: back button, info, images and notes', (
@@ -219,24 +216,24 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ANNA'));
+    await tester.tap(find.text('Anna'));
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Back'), findsOneWidget);
     expect(find.text('+43 1'), findsOneWidget);
-    expect(find.text('[+]'), findsOneWidget);
+    expect(find.byTooltip('Add image'), findsOneWidget);
     expect(find.text('## Food\npho'), findsOneWidget);
 
     // Order top to bottom: info box, images, notes.
-    final callY = tester.getTopLeft(find.text('[ CALLED TODAY ]')).dy;
-    final addY = tester.getTopLeft(find.text('[+]')).dy;
+    final callY = tester.getTopLeft(find.text('Called today')).dy;
+    final addY = tester.getTopLeft(find.byTooltip('Add image')).dy;
     final notesY = tester.getTopLeft(find.text('## Food\npho')).dy;
     expect(callY, lessThan(addY));
     expect(addY, lessThan(notesY));
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('ANNA'), findsOneWidget);
+    expect(find.text('Anna'), findsOneWidget);
     expect(find.byTooltip('Back'), findsNothing);
   });
 
@@ -254,31 +251,31 @@ void main() {
     ]);
     await tester.pumpWidget(_app(repo));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ANNA'));
+    await tester.tap(find.text('Anna'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(Image).first);
     await tester.pumpAndSettle();
 
     expect(find.text('1 / 2'), findsOneWidget);
     expect(find.text('cake'), findsOneWidget);
-    expect(find.text('<'), findsOneWidget, reason: 'only the back button');
+    expect(find.byTooltip('Previous image'), findsNothing);
 
-    await tester.tap(find.text('>'));
+    await tester.tap(find.byTooltip('Next image'));
     await tester.pumpAndSettle();
     expect(find.text('2 / 2'), findsOneWidget);
-    expect(find.text('tap to add context_'), findsOneWidget);
+    expect(find.text('Tap to add context'), findsOneWidget);
 
-    await tester.tap(find.text('tap to add context_'));
+    await tester.tap(find.text('Tap to add context'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'peonies for her birthday');
-    await tester.tap(find.text('[SAVE]'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(find.text('peonies for her birthday'), findsOneWidget);
     expect(repo.friends.single.images[1].caption, 'peonies for her birthday');
 
-    await tester.tap(find.text('[DELETE]'));
+    await tester.tap(find.byTooltip('Delete image'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('[DELETE]').last);
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(repo.friends.single.images.map((i) => i.file), ['assets/a.jpg']);
     expect(find.text('1 / 1'), findsOneWidget);
@@ -290,22 +287,22 @@ void main() {
     ]);
     await tester.pumpWidget(_app(repo));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ANNA'));
+    await tester.tap(find.text('Anna'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('[EDIT]'));
+    await tester.tap(find.byTooltip('Edit'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
-      find.text('[ DELETE FRIEND ]'),
+      find.text('Delete friend'),
       find.byType(ListView),
       const Offset(0, -300),
     );
-    await tester.tap(find.text('[ DELETE FRIEND ]'));
+    await tester.tap(find.text('Delete friend'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('[DELETE]'));
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
 
     expect(repo.friends, isEmpty);
-    expect(find.textContaining('no friends yet'), findsOneWidget);
+    expect(find.text('No friends yet'), findsOneWidget);
   });
 
   testWidgets('options: colour theme applies and is saved', (tester) async {
@@ -328,7 +325,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('FRIENDBASE'), findsOneWidget);
+    expect(find.text('FriendBase'), findsOneWidget);
   });
 
   testWidgets('options: font and text size', (tester) async {
@@ -372,28 +369,42 @@ void main() {
     double y(String name) => tester.getTopLeft(find.text(name)).dy;
 
     // Default: never-called Zoe is most urgent.
-    expect(y('ZOE'), lessThan(y('ADAM')));
-    expect(find.text('b 3d'), findsOneWidget);
-    final rowHeight = tester.getSize(find.byType(InkWell).at(1)).height;
+    expect(y('Zoe'), lessThan(y('Adam')));
+    expect(find.textContaining('Birthday in 3d'), findsOneWidget);
+    final rowHeight = tester
+        .getSize(
+          find
+              .ancestor(of: find.text('Adam'), matching: find.byType(InkWell))
+              .first,
+        )
+        .height;
 
     await _openOptions(tester, find.text('Name'));
     await tester.tap(find.text('Name'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('compact list'),
+      find.text('Compact list'),
       -200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('compact list'));
-    await tester.tap(find.text('show upcoming birthdays in list'));
+    await tester.ensureVisible(find.text('Compact list'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Compact list'));
+    await tester.tap(find.text('Upcoming birthdays in list'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
 
-    expect(y('ADAM'), lessThan(y('ZOE')));
-    expect(find.text('b 3d'), findsNothing);
+    expect(y('Adam'), lessThan(y('Zoe')));
+    expect(find.textContaining('Birthday in 3d'), findsNothing);
     expect(
-      tester.getSize(find.byType(InkWell).at(1)).height,
+      tester
+          .getSize(
+            find
+                .ancestor(of: find.text('Adam'), matching: find.byType(InkWell))
+                .first,
+          )
+          .height,
       lessThan(rowHeight),
     );
   });
@@ -419,12 +430,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(notifications.scheduled, isEmpty);
 
-    await _openOptions(tester, find.text('overdue calls'));
-    await tester.tap(find.text('overdue calls'));
+    await _openOptions(tester, find.text('Overdue calls'));
+    await tester.tap(find.text('Overdue calls'));
     await tester.pumpAndSettle();
     expect(settings.saved?.remindOverdueCalls, isTrue);
     expect(notifications.scheduled.single.title, 'Time to call Marko');
-    expect(find.text('[x]'), findsWidgets);
+    expect(
+      find.byWidgetPredicate((w) => w is Checkbox && w.value == true),
+      findsOneWidget,
+    );
   });
 
   testWidgets('options: denied permission keeps the reminder off', (
@@ -439,23 +453,29 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _openOptions(tester, find.text('upcoming birthdays'));
-    await tester.tap(find.text('upcoming birthdays'));
+    await _openOptions(tester, find.text('Birthdays ahead'));
+    await tester.tap(find.text('Birthdays ahead'));
     await tester.pumpAndSettle();
     expect(settings.saved, isNull);
-    expect(find.textContaining('notifications are off'), findsOneWidget);
-    expect(find.text('days before'), findsNothing);
+    expect(find.textContaining('Notifications are off'), findsOneWidget);
+    expect(find.text('Days before'), findsNothing);
   });
 
   testWidgets('options: about shows version, vault and counts', (tester) async {
     await tester.pumpWidget(
-      _app(_MemoryRepository([const Friend(id: '1', name: 'A')])),
+      _app(_MemoryRepository([const Friend(id: '1', name: 'Alice')])),
     );
     await tester.pumpAndSettle();
-    await _openOptions(tester, find.text('[ LICENCES ]'));
+    await _openOptions(tester, find.text('Licences'));
     expect(find.text('FriendBase 0.3.0 (3)'), findsOneWidget);
     expect(find.text('/unused'), findsOneWidget);
     expect(find.text('1 friend'), findsOneWidget);
+    expect(find.text('Made by Jona Jožef Zeichen'), findsOneWidget);
+
+    await tester.tap(find.text('Licences'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('© 2026 Jona Jožef Zeichen'), findsOneWidget);
+    expect(find.textContaining('MIT License'), findsOneWidget);
   });
 
   testWidgets('editor has no tags field', (tester) async {
@@ -470,15 +490,17 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _app(_MemoryRepository([const Friend(id: '1', name: 'A', folder: 'a')])),
+      _app(
+        _MemoryRepository([const Friend(id: '1', name: 'Alice', folder: 'a')]),
+      ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('A'));
+    await tester.tap(find.text('Alice'));
     await tester.pumpAndSettle();
     expect(find.text(kNotesHint), findsOneWidget);
     expect(find.textContaining('## Food'), findsNothing);
 
-    await tester.tap(find.text('[EDIT]'));
+    await tester.tap(find.byTooltip('Edit'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
       find.text(kNotesHint),
@@ -502,18 +524,18 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ANNA'));
+    await tester.tap(find.text('Anna'));
     await tester.pumpAndSettle();
 
     final before = tester.getTopLeft(find.byTooltip('Back'));
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -1500));
     await tester.pumpAndSettle();
-    expect(find.text('ANNA'), findsNothing, reason: 'info box scrolled away');
+    expect(find.text('Anna'), findsNothing, reason: 'info box scrolled away');
     expect(tester.getTopLeft(find.byTooltip('Back')), before);
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('FRIENDBASE'), findsOneWidget);
+    expect(find.text('FriendBase'), findsOneWidget);
   });
 
   for (final save in [true, false]) {
@@ -525,20 +547,20 @@ void main() {
         ]);
         await tester.pumpWidget(_app(repo, pickedImage: 'new.jpg'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('ANNA'));
+        await tester.tap(find.text('Anna'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('[+]'));
+        await tester.tap(find.byTooltip('Add image'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('[ TAKE PHOTO ]'));
+        await tester.tap(find.text('Take a photo'));
         await tester.pumpAndSettle();
-        expect(find.text('IMAGE CONTEXT'), findsOneWidget);
+        expect(find.text('What is this image about?'), findsOneWidget);
         expect(repo.friends.single.images.single.file, 'assets/new.jpg');
 
         await tester.enterText(find.byType(TextField), 'her new bike');
-        await tester.tap(find.text(save ? '[SAVE]' : '[SKIP]'));
+        await tester.tap(find.text(save ? 'Save' : 'Skip'));
         await tester.pumpAndSettle();
-        expect(find.text('IMAGE CONTEXT'), findsNothing);
+        expect(find.text('What is this image about?'), findsNothing);
         expect(
           repo.friends.single.images.single.caption,
           save ? 'her new bike' : isEmpty,

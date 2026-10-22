@@ -16,7 +16,7 @@ import 'features/friend_list/friend_list_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  _registerFontLicences();
+  _registerLicences();
   final docs = await getApplicationDocumentsDirectory();
   final vault = Directory('${docs.path}/FriendBase');
   await vault.create(recursive: true);
@@ -37,16 +37,19 @@ Future<void> main() async {
   );
 }
 
-/// Bundled fonts are SIL OFL; show their licences on the licences page.
-void _registerFontLicences() {
-  for (final (font, file) in [
-    ('Source Serif 4', 'SourceSerif4-OFL.txt'),
-    ('Atkinson Hyperlegible', 'AtkinsonHyperlegible-OFL.txt'),
+/// Adds what Flutter can't find on its own to the licences page: the app's
+/// own MIT licence and the bundled fonts' SIL OFL texts. Dart/Flutter
+/// package licences are collected automatically at build time.
+void _registerLicences() {
+  for (final (name, asset) in [
+    ('FriendBase', 'assets/LICENSE.txt'),
+    ('Source Serif 4', 'assets/fonts/SourceSerif4-OFL.txt'),
+    ('Atkinson Hyperlegible', 'assets/fonts/AtkinsonHyperlegible-OFL.txt'),
   ]) {
     LicenseRegistry.addLicense(() async* {
       yield LicenseEntryWithLineBreaks([
-        font,
-      ], await rootBundle.loadString('assets/fonts/$file'));
+        name,
+      ], await rootBundle.loadString(asset));
     });
   }
 }

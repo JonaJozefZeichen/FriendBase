@@ -70,14 +70,31 @@ String? fontFamilyFor(AppFont font) => switch (font) {
         : 'monospace',
 };
 
-/// Two colours, square corners, one font.
+/// Corner radius for cards, fields and buttons.
+const kRadius = 16.0;
+
+/// Two colours, soft cards, rounded corners, one font.
+///
+/// Cards and fields are a light tint of [Palette.fg] over [Palette.bg]
+/// (`colorScheme.surfaceContainer`), so every palette stays two-colour.
 ThemeData buildTheme(Palette palette, {AppFont font = AppFont.system}) {
   final fg = palette.fg;
   final bg = palette.bg;
   final brightness = palette.brightness;
+  final dark = brightness == Brightness.dark;
   final family = fontFamilyFor(font);
-  const square = RoundedRectangleBorder(borderRadius: BorderRadius.zero);
-  final border = BorderSide(color: fg);
+  Color tint(double light, double darkAlpha) =>
+      Color.alphaBlend(fg.withValues(alpha: dark ? darkAlpha : light), bg);
+  final card = tint(0.06, 0.12);
+  final cardHigh = tint(0.11, 0.2);
+  final muted = fg.withValues(alpha: 0.55);
+  final rounded = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(kRadius),
+  );
+  final fieldBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(kRadius),
+    borderSide: BorderSide.none,
+  );
 
   final base = ThemeData(
     useMaterial3: true,
@@ -93,11 +110,17 @@ ThemeData buildTheme(Palette palette, {AppFont font = AppFont.system}) {
       onError: bg,
       surface: bg,
       onSurface: fg,
+      onSurfaceVariant: muted,
+      surfaceContainerLow: card,
+      surfaceContainer: card,
+      surfaceContainerHigh: cardHigh,
+      surfaceContainerHighest: cardHigh,
+      outline: fg.withValues(alpha: 0.3),
+      outlineVariant: fg.withValues(alpha: 0.12),
     ),
     scaffoldBackgroundColor: bg,
     canvasColor: bg,
     hintColor: fg.withValues(alpha: 0.45),
-    splashFactory: NoSplash.splashFactory,
   );
 
   return base.copyWith(
@@ -107,73 +130,109 @@ ThemeData buildTheme(Palette palette, {AppFont font = AppFont.system}) {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      shape: Border(bottom: border),
-      titleTextStyle: base.textTheme.titleMedium?.copyWith(
+      titleTextStyle: base.textTheme.titleLarge?.copyWith(
         color: fg,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 2,
+        fontWeight: FontWeight.w700,
       ),
     ),
-    dividerTheme: DividerThemeData(color: fg, thickness: 1, space: 1),
+    dividerTheme: DividerThemeData(
+      color: fg.withValues(alpha: 0.1),
+      thickness: 1,
+      space: 1,
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        shape: square,
+        shape: rounded,
         backgroundColor: fg,
         foregroundColor: bg,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         // Spelled out: a button textStyle replaces the theme font entirely.
         textStyle: TextStyle(
           fontFamily: family,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 2,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
         ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        shape: square,
-        side: border,
+        shape: rounded,
+        side: BorderSide(color: fg.withValues(alpha: 0.3)),
         foregroundColor: fg,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(shape: square, foregroundColor: fg),
+      style: TextButton.styleFrom(
+        foregroundColor: fg,
+        textStyle: TextStyle(fontFamily: family, fontWeight: FontWeight.w600),
+      ),
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(foregroundColor: fg),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: fg,
       foregroundColor: bg,
-      elevation: 0,
-      shape: square,
+      elevation: 2,
+      highlightElevation: 4,
+      shape: rounded,
     ),
     inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
-        borderSide: border,
+      filled: true,
+      fillColor: card,
+      border: fieldBorder,
+      enabledBorder: fieldBorder,
+      focusedBorder: fieldBorder.copyWith(
+        borderSide: BorderSide(color: fg.withValues(alpha: 0.5), width: 1.5),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
-        borderSide: border,
+      errorBorder: fieldBorder.copyWith(
+        borderSide: BorderSide(color: fg, width: 1.5),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
-        borderSide: border.copyWith(width: 2),
+      focusedErrorBorder: fieldBorder.copyWith(
+        borderSide: BorderSide(color: fg, width: 1.5),
       ),
+      labelStyle: TextStyle(color: muted),
       floatingLabelStyle: TextStyle(color: fg),
       hintStyle: TextStyle(color: fg.withValues(alpha: 0.45)),
+      prefixIconColor: muted,
+    ),
+    checkboxTheme: CheckboxThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      side: BorderSide(color: fg.withValues(alpha: 0.4), width: 1.5),
+      fillColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected) ? fg : null,
+      ),
+      checkColor: WidgetStatePropertyAll(bg),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: fg,
       contentTextStyle: TextStyle(color: bg, fontFamily: family),
       actionTextColor: bg,
-      shape: square,
+      behavior: SnackBarBehavior.floating,
+      shape: rounded,
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: bg,
-      shape: RoundedRectangleBorder(side: border),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     ),
-    bottomSheetTheme: BottomSheetThemeData(backgroundColor: bg),
-    datePickerTheme: DatePickerThemeData(backgroundColor: bg),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: bg,
+      surfaceTintColor: Colors.transparent,
+      showDragHandle: true,
+      dragHandleColor: fg.withValues(alpha: 0.3),
+    ),
+    datePickerTheme: DatePickerThemeData(
+      backgroundColor: bg,
+      surfaceTintColor: Colors.transparent,
+    ),
     timePickerTheme: TimePickerThemeData(backgroundColor: bg),
-    textSelectionTheme: TextSelectionThemeData(cursorColor: fg),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: fg),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: fg,
+      selectionColor: fg.withValues(alpha: 0.2),
+      selectionHandleColor: fg,
+    ),
   );
 }
