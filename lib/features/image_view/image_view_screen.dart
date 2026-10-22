@@ -49,7 +49,10 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
 
     // Always dark, so photos stand out; the monochrome theme just inverts.
     return Theme(
-      data: buildTheme(Brightness.dark),
+      data: buildTheme(
+        kDark,
+        font: ref.watch(settingsProvider.select((s) => s.font)),
+      ),
       child: Builder(
         builder: (context) => Scaffold(
           body: Stack(

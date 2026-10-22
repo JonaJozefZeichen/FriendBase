@@ -1,3 +1,4 @@
+import 'app_settings.dart';
 import 'birthday.dart';
 import 'friend.dart';
 
@@ -60,4 +61,28 @@ List<Friend> sortByUrgency(Iterable<Friend> friends, {DateTime? now}) {
         : a.name.toLowerCase().compareTo(b.name.toLowerCase());
   });
   return list;
+}
+
+/// Orders the friend list by the user's chosen [sort].
+List<Friend> sortFriends(
+  Iterable<Friend> friends,
+  ListSort sort, {
+  DateTime? now,
+}) {
+  final at = now ?? DateTime.now();
+  int byName(Friend a, Friend b) =>
+      a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  switch (sort) {
+    case ListSort.urgency:
+      return sortByUrgency(friends, now: at);
+    case ListSort.name:
+      return friends.toList()..sort(byName);
+    case ListSort.birthday:
+      // Soonest next birthday first; friends without one go last.
+      int key(Friend f) => f.birthday?.daysUntil(at) ?? 1 << 30;
+      return friends.toList()..sort((a, b) {
+        final byDays = key(a).compareTo(key(b));
+        return byDays != 0 ? byDays : byName(a, b);
+      });
+  }
 }

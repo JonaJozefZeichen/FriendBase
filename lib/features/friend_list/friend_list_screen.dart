@@ -26,7 +26,6 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
     return [
       f.name,
       f.nickname ?? '',
-      ...f.tags,
       f.notes,
     ].any((s) => s.toLowerCase().contains(q));
   }
@@ -89,14 +88,19 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
               error: (e, _) => Center(child: Text('!! $e')),
               data: (all) {
                 if (all.isEmpty) return const _EmptyState();
-                final visible = sortByUrgency(all.where(_matches));
+                final settings = ref.watch(settingsProvider);
+                final visible = sortFriends(all.where(_matches), settings.sort);
                 return RefreshIndicator(
                   onRefresh: () => ref.read(friendsProvider.notifier).reload(),
                   child: ListView.separated(
                     padding: const EdgeInsets.only(bottom: 96),
                     itemCount: visible.length,
                     separatorBuilder: (_, _) => const Divider(),
-                    itemBuilder: (_, i) => _FriendRow(friend: visible[i]),
+                    itemBuilder: (_, i) => _FriendRow(
+                      friend: visible[i],
+                      compact: settings.compactList,
+                      showBirthday: settings.birthdaysInList,
+                    ),
                   ),
                 );
               },
@@ -108,14 +112,26 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
   }
 }
 
+/// Birthdays this close show up on the row when enabled in Options.
+const _birthdayWindowDays = 14;
+
 class _FriendRow extends StatelessWidget {
-  const _FriendRow({required this.friend});
+  const _FriendRow({
+    required this.friend,
+    required this.compact,
+    required this.showBirthday,
+  });
 
   final Friend friend;
+  final bool compact;
+  final bool showBirthday;
 
   @override
   Widget build(BuildContext context) {
     final status = CallStatus.of(friend);
+    final birthdayIn = friend.birthday?.daysUntil(DateTime.now());
+    final birthdaySoon =
+        showBirthday && birthdayIn != null && birthdayIn <= _birthdayWindowDays;
     return InkWell(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
@@ -123,7 +139,10 @@ class _FriendRow extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: compact ? 8 : 16,
+        ),
         child: Row(
           children: [
             Expanded(
@@ -133,6 +152,14 @@ class _FriendRow extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
+            if (birthdaySoon)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Text(
+                  birthdayIn == 0 ? 'b today' : 'b ${birthdayIn}d',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
             SizedBox(
               width: 56,
               child: Text(
@@ -141,7 +168,7 @@ class _FriendRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(callMarker(status.state)),
+            SizedBox(width: 24, child: Text(callMarker(status.state).trim())),
           ],
         ),
       ),
@@ -154,13 +181,18 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A real box rather than box-drawing characters, which only line up
+    // in a monospace font.
     return const Center(
-      child: Text(
-        '┌──────────────────────┐\n'
-        '│   no friends yet.    │\n'
-        '│   tap [+] to add.    │\n'
-        '└──────────────────────┘',
-        textAlign: TextAlign.center,
+      child: SizedBox(
+        width: 240,
+        child: AsciiBox(
+          title: 'empty',
+          child: Text(
+            'no friends yet.\ntap [+] to add.',
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
   }

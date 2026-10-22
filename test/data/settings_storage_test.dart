@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:friendbase/data/settings_storage.dart';
 import 'package:friendbase/domain/app_settings.dart';
@@ -16,23 +15,57 @@ void main() {
 
   tearDown(() => root.delete(recursive: true));
 
-  test('defaults to following the phone when no config exists', () async {
-    expect((await storage.load()).themeMode, ThemeMode.system);
+  File config() => File('${root.path}/.friendbase/config.json');
+
+  test('defaults when no config exists', () async {
+    final s = await storage.load();
+    expect(s.theme, AppTheme.system);
+    expect(s.font, AppFont.system);
+    expect(s.sort, ListSort.urgency);
+    expect(s.anyReminders, isFalse);
+    expect(s.reminderTimeLabel, '09:00');
   });
 
-  test('saves to .friendbase/config.json and loads back', () async {
-    await storage.save(const AppSettings(themeMode: ThemeMode.dark));
-    final file = File('${root.path}/.friendbase/config.json');
-    expect(file.readAsStringSync(), contains('"theme": "dark"'));
-    expect((await storage.load()).themeMode, ThemeMode.dark);
+  test('every field round-trips through config.json', () async {
+    const custom = AppSettings(
+      theme: AppTheme.lavender,
+      font: AppFont.serif,
+      textScale: 1.3,
+      compactList: true,
+      birthdaysInList: false,
+      sort: ListSort.birthday,
+      remindBirthdays: true,
+      birthdayDaysBefore: 7,
+      remindOverdueCalls: true,
+      reminderHour: 18,
+      reminderMinute: 5,
+    );
+    await storage.save(custom);
+    expect(config().readAsStringSync(), contains('"reminder_time": "18:05"'));
+    final loaded = await storage.load();
+    expect(loaded.toJson(), custom.toJson());
+  });
+
+  test('a v0.2 config still loads', () async {
+    config()
+      ..createSync(recursive: true)
+      ..writeAsStringSync('{"theme": "dark"}');
+    final s = await storage.load();
+    expect(s.theme, AppTheme.dark);
+    expect(s.font, AppFont.system);
   });
 
   test('broken or unknown values fall back to defaults', () async {
-    final file = File('${root.path}/.friendbase/config.json')
-      ..createSync(recursive: true);
-    file.writeAsStringSync('{not json');
-    expect((await storage.load()).themeMode, ThemeMode.system);
-    file.writeAsStringSync('{"theme": "sepia"}');
-    expect((await storage.load()).themeMode, ThemeMode.system);
+    config()
+      ..createSync(recursive: true)
+      ..writeAsStringSync('{not json');
+    expect((await storage.load()).theme, AppTheme.system);
+
+    config().writeAsStringSync(
+      '{"theme": "sepia", "text_scale": 7, "birthday_days_before": 5, '
+      '"reminder_time": "25:99", "compact_list": "yes"}',
+    );
+    final s = await storage.load();
+    expect(s.toJson(), const AppSettings().toJson());
   });
 }

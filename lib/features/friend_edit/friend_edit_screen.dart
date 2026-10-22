@@ -30,9 +30,6 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
     text: widget.friend?.emails.join('\n'),
   );
   late final _address = TextEditingController(text: widget.friend?.address);
-  late final _tags = TextEditingController(
-    text: widget.friend?.tags.join(', '),
-  );
   late final _interval = TextEditingController(
     text: widget.friend?.callIntervalDays?.toString(),
   );
@@ -48,7 +45,6 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
       _phones,
       _emails,
       _address,
-      _tags,
       _interval,
       _notes,
     ]) {
@@ -77,7 +73,6 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
       phones: _split(_phones, '\n'),
       emails: _split(_emails, '\n'),
       address: () => _optional(_address),
-      tags: _split(_tags, ',').map((t) => t.replaceFirst('#', '')).toList(),
       callIntervalDays: () => interval == null ? null : int.parse(interval),
       notes: _notes.text,
     );
@@ -162,7 +157,6 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
               lines: 2,
             ),
             _field(_address, 'address', lines: 2),
-            _field(_tags, 'tags (comma separated)'),
             _field(
               _interval,
               'call every N days (empty = default)',

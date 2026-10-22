@@ -11,9 +11,6 @@ phones:
   - "+43 660 1234567"
 emails: []
 address: Hauptstraße 1, 1010 Wien
-tags:
-  - uni
-  - close
 call_interval_days: 30
 calls:
   - 2026-09-02T19:40
@@ -23,6 +20,9 @@ images:
     caption: Her favourite cake, from Café Sacher
   - file: assets/peonies.jpg
 created: 2026-10-22
+tags:
+  - uni
+  - close
 mood: sunny
 ---
 
@@ -43,11 +43,14 @@ void main() {
       expect(f.phones, ['+43 660 1234567']);
       expect(f.emails, isEmpty);
       expect(f.address, 'Hauptstraße 1, 1010 Wien');
-      expect(f.tags, ['uni', 'close']);
       expect(f.callIntervalDays, 30);
       expect(f.lastCall, DateTime(2026, 10, 15, 20, 5));
       expect(f.notes, startsWith('## Food'));
-      expect(f.extra, {'mood': 'sunny'});
+      // Tags were removed from the app; old values are kept untouched.
+      expect(f.extra, {
+        'tags': ['uni', 'close'],
+        'mood': 'sunny',
+      });
       expect(f.images.map((i) => i.file), [
         'assets/cake.jpg',
         'assets/peonies.jpg',
@@ -70,7 +73,7 @@ void main() {
       expect(f.name, 'marko');
       expect(f.id, isNotEmpty);
       expect(f.phones, ['0660123']);
-      expect(f.tags, ['solo']);
+      expect(f.extra['tags'], 'solo');
       expect(f.notes, 'hi');
     });
 

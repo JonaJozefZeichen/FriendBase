@@ -145,14 +145,7 @@ class _InfoBox extends StatelessWidget {
               ),
             ],
           ),
-          if (friend.nickname != null || friend.tags.isNotEmpty)
-            Text(
-              [
-                if (friend.nickname != null) 'aka ${friend.nickname}',
-                if (friend.tags.isNotEmpty)
-                  friend.tags.map((t) => '#$t').join(' '),
-              ].join('  ·  '),
-            ),
+          if (friend.nickname != null) Text('aka ${friend.nickname}'),
           const SizedBox(height: 8),
           for (final phone in friend.phones)
             _LinkLine(

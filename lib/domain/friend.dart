@@ -15,7 +15,6 @@ class Friend {
     this.phones = const [],
     this.emails = const [],
     this.address,
-    this.tags = const [],
     this.avatar,
     this.callIntervalDays,
     this.calls = const [],
@@ -35,7 +34,6 @@ class Friend {
   final List<String> phones;
   final List<String> emails;
   final String? address;
-  final List<String> tags;
 
   /// Path relative to the friend's folder, e.g. `assets/avatar.jpg`.
   final String? avatar;
@@ -89,7 +87,6 @@ class Friend {
     List<String>? phones,
     List<String>? emails,
     String? Function()? address,
-    List<String>? tags,
     String? Function()? avatar,
     int? Function()? callIntervalDays,
     List<String>? calls,
@@ -106,7 +103,6 @@ class Friend {
       phones: phones ?? this.phones,
       emails: emails ?? this.emails,
       address: address != null ? address() : this.address,
-      tags: tags ?? this.tags,
       avatar: avatar != null ? avatar() : this.avatar,
       callIntervalDays: callIntervalDays != null
           ? callIntervalDays()

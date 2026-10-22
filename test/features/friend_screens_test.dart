@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:friendbase/app/providers.dart';
+import 'package:friendbase/app/theme.dart';
 import 'package:friendbase/data/friend_repository.dart';
+import 'package:friendbase/data/notification_service.dart';
 import 'package:friendbase/data/settings_storage.dart';
 import 'package:friendbase/domain/app_settings.dart';
 import 'package:friendbase/data/vault_storage.dart';
 import 'package:friendbase/domain/friend.dart';
+import 'package:friendbase/domain/reminders.dart';
 import 'package:friendbase/main.dart';
 
 import 'dart:io';
@@ -65,18 +68,54 @@ class _MemorySettings extends SettingsStorage {
   Future<void> save(AppSettings settings) async => saved = settings;
 }
 
+/// Records what would be scheduled instead of talking to the OS.
+class _FakeNotifications extends NotificationService {
+  _FakeNotifications({this.allow = true});
+
+  final bool allow;
+  List<PlannedReminder> scheduled = const [];
+
+  @override
+  Future<bool> requestPermission() async => allow;
+
+  @override
+  Future<void> replaceAll(List<PlannedReminder> reminders) async =>
+      scheduled = reminders;
+}
+
 Widget _app(
   _MemoryRepository repo, {
   _MemorySettings? settings,
+  AppSettings initial = const AppSettings(),
+  _FakeNotifications? notifications,
   String? pickedImage,
 }) => ProviderScope(
   overrides: [
     friendRepositoryProvider.overrideWithValue(repo),
     settingsStorageProvider.overrideWithValue(settings ?? _MemorySettings()),
+    initialSettingsProvider.overrideWithValue(initial),
+    notificationServiceProvider.overrideWithValue(
+      notifications ?? _FakeNotifications(),
+    ),
+    appVersionProvider.overrideWith((ref) async => '0.3.0 (3)'),
     imagePickerProvider.overrideWithValue((_) async => pickedImage),
   ],
   child: const FriendBaseApp(),
 );
+
+/// Opens Options and scrolls [target] into view.
+Future<void> _openOptions(WidgetTester tester, [Finder? target]) async {
+  await tester.tap(find.byTooltip('Options'));
+  await tester.pumpAndSettle();
+  if (target != null) {
+    await tester.scrollUntilVisible(
+      target,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+  }
+}
 
 void main() {
   final today = DateTime.now();
@@ -269,31 +308,162 @@ void main() {
     expect(find.textContaining('no friends yet'), findsOneWidget);
   });
 
-  testWidgets('options: theme switch applies and is saved', (tester) async {
+  testWidgets('options: colour theme applies and is saved', (tester) async {
     final settings = _MemorySettings();
     await tester.pumpWidget(_app(_MemoryRepository([]), settings: settings));
     await tester.pumpAndSettle();
-    ThemeMode mode() =>
-        tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode!;
-    expect(mode(), ThemeMode.system);
+    MaterialApp app() => tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app().themeMode, ThemeMode.system);
 
-    await tester.tap(find.byTooltip('Options'));
+    await _openOptions(tester);
+    await tester.tap(find.text('Rose'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('following your phone'), findsOneWidget);
+    expect(app().themeMode, ThemeMode.light);
+    expect(app().theme!.scaffoldBackgroundColor, kPalettes[AppTheme.rose]!.bg);
+    expect(settings.saved?.theme, AppTheme.rose);
 
-    await tester.tap(find.text('[ DARK ]'));
+    await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
-    expect(mode(), ThemeMode.dark);
-    expect(settings.saved?.themeMode, ThemeMode.dark);
-    expect(find.textContaining('following your phone'), findsNothing);
-
-    await tester.tap(find.text('[ LIGHT ]'));
-    await tester.pumpAndSettle();
-    expect(mode(), ThemeMode.light);
+    expect(app().theme!.scaffoldBackgroundColor, kDark.bg);
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.text('FRIENDBASE'), findsOneWidget);
+  });
+
+  testWidgets('options: font and text size', (tester) async {
+    await tester.pumpWidget(_app(_MemoryRepository([])));
+    await tester.pumpAndSettle();
+    MaterialApp app() => tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(
+      app().theme!.textTheme.bodyMedium!.fontFamily,
+      isNot('SourceSerif4'),
+    );
+
+    await _openOptions(tester, find.text('Serif'));
+    await tester.tap(find.text('Serif'));
+    await tester.pumpAndSettle();
+    expect(app().theme!.textTheme.bodyMedium!.fontFamily, 'SourceSerif4');
+
+    await tester.tap(find.text('XL'));
+    await tester.pumpAndSettle();
+    final scale = MediaQuery.textScalerOf(tester.element(find.text('XL')))
+        .scale(10);
+    expect(scale, closeTo(13, 0.01));
+  });
+
+  testWidgets('options: sort, compact list, birthdays in list', (tester) async {
+    final soon = DateTime.now().add(const Duration(days: 3));
+    final mm = soon.month.toString().padLeft(2, '0');
+    final dd = soon.day.toString().padLeft(2, '0');
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([
+          Friend(id: '1', name: 'Zoe', birthdayRaw: '--$mm-$dd'),
+          Friend(
+            id: '2',
+            name: 'Adam',
+            calls: [formatCallTime(DateTime.now())],
+          ),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    double y(String name) => tester.getTopLeft(find.text(name)).dy;
+
+    // Default: never-called Zoe is most urgent.
+    expect(y('ZOE'), lessThan(y('ADAM')));
+    expect(find.text('b 3d'), findsOneWidget);
+    final rowHeight = tester.getSize(find.byType(InkWell).at(1)).height;
+
+    await _openOptions(tester, find.text('Name'));
+    await tester.tap(find.text('Name'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('compact list'),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('compact list'));
+    await tester.tap(find.text('show upcoming birthdays in list'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    expect(y('ADAM'), lessThan(y('ZOE')));
+    expect(find.text('b 3d'), findsNothing);
+    expect(
+      tester.getSize(find.byType(InkWell).at(1)).height,
+      lessThan(rowHeight),
+    );
+  });
+
+  testWidgets('options: reminders ask permission and get scheduled', (
+    tester,
+  ) async {
+    final notifications = _FakeNotifications();
+    final settings = _MemorySettings();
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([
+          Friend(
+            id: '1',
+            name: 'Marko',
+            calls: [formatCallTime(DateTime(2026, 1, 1))],
+          ),
+        ]),
+        settings: settings,
+        notifications: notifications,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(notifications.scheduled, isEmpty);
+
+    await _openOptions(tester, find.text('overdue calls'));
+    await tester.tap(find.text('overdue calls'));
+    await tester.pumpAndSettle();
+    expect(settings.saved?.remindOverdueCalls, isTrue);
+    expect(notifications.scheduled.single.title, 'Time to call Marko');
+    expect(find.text('[x]'), findsWidgets);
+  });
+
+  testWidgets('options: denied permission keeps the reminder off', (
+    tester,
+  ) async {
+    final settings = _MemorySettings();
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([]),
+        settings: settings,
+        notifications: _FakeNotifications(allow: false),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _openOptions(tester, find.text('upcoming birthdays'));
+    await tester.tap(find.text('upcoming birthdays'));
+    await tester.pumpAndSettle();
+    expect(settings.saved, isNull);
+    expect(find.textContaining('notifications are off'), findsOneWidget);
+    expect(find.text('days before'), findsNothing);
+  });
+
+  testWidgets('options: about shows version, vault and counts', (tester) async {
+    await tester.pumpWidget(
+      _app(_MemoryRepository([const Friend(id: '1', name: 'A')])),
+    );
+    await tester.pumpAndSettle();
+    await _openOptions(tester, find.text('[ LICENCES ]'));
+    expect(find.text('FriendBase 0.3.0 (3)'), findsOneWidget);
+    expect(find.text('/unused'), findsOneWidget);
+    expect(find.text('1 friend'), findsOneWidget);
+  });
+
+  testWidgets('editor has no tags field', (tester) async {
+    await tester.pumpWidget(_app(_MemoryRepository([])));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('tags'), findsNothing);
   });
 
   testWidgets('empty notes show the grey hint in view and editor', (

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../data/friend_repository.dart';
+import '../data/notification_service.dart';
 import '../data/settings_storage.dart';
 import '../domain/app_settings.dart';
 import '../domain/friend.dart';
+import '../domain/reminders.dart';
 
 /// Overridden in `main()` once the vault directory is known.
 final friendRepositoryProvider = Provider<FriendRepository>(
@@ -30,11 +33,31 @@ class SettingsNotifier extends Notifier<AppSettings> {
   @override
   AppSettings build() => ref.read(initialSettingsProvider);
 
-  Future<void> setThemeMode(ThemeMode mode) async {
-    state = state.copyWith(themeMode: mode);
+  /// Applies [change] and saves the result to `config.json`.
+  Future<void> update(AppSettings Function(AppSettings) change) async {
+    state = change(state);
     await ref.read(settingsStorageProvider).save(state);
   }
 }
+
+final notificationServiceProvider = Provider<NotificationService>(
+  (ref) => NotificationService(),
+);
+
+/// Keeps scheduled notifications in line with friends and settings: every
+/// change cancels all pending reminders and schedules the current plan.
+final reminderSyncProvider = Provider<void>((ref) {
+  final friends = ref.watch(friendsProvider).value;
+  final settings = ref.watch(settingsProvider);
+  if (friends == null) return;
+  final plan = settings.anyReminders
+      ? planReminders(friends, settings)
+      : const <PlannedReminder>[];
+  ref
+      .read(notificationServiceProvider)
+      .replaceAll(plan)
+      .catchError((Object e) => debugPrint('scheduling reminders failed: $e'));
+});
 
 /// Picks an image and returns its temporary path, or null if cancelled.
 /// A provider so widget tests can fake picking.
@@ -109,3 +132,9 @@ class FriendsNotifier extends AsyncNotifier<List<Friend>> {
     state = AsyncData(await _repo.loadAll());
   }
 }
+
+/// e.g. `0.3.0 (1)`, shown in Options → About.
+final appVersionProvider = FutureProvider<String>((ref) async {
+  final info = await PackageInfo.fromPlatform();
+  return '${info.version} (${info.buildNumber})';
+});

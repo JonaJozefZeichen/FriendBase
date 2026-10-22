@@ -116,3 +116,98 @@ String callLabel(CallState state) => switch (state) {
 
 /// `0d`, `18d`, or `—` when never called.
 String daysLabel(int? days) => days == null ? '—' : '${days}d';
+
+/// A checkbox drawn as text: `[x] label` / `[ ] label`.
+class AsciiToggle extends StatelessWidget {
+  const AsciiToggle({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      toggled: value,
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Text(
+                value ? '[x]' : '[ ]',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(label)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A row of equal-width options; the selected one is filled.
+class ChoiceRow<T> extends StatelessWidget {
+  const ChoiceRow({
+    super.key,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  /// Value, label and an optional label style (e.g. to preview a font).
+  final List<(T, String, TextStyle?)> options;
+  final T? selected;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        for (final (i, (value, label, style)) in options.indexed) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: Semantics(
+              selected: value == selected,
+              button: true,
+              child: InkWell(
+                onTap: () => onSelected(value),
+                child: Container(
+                  height: 44,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: value == selected ? colors.onSurface : null,
+                    border: Border.all(color: colors.onSurface),
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: (style ?? const TextStyle()).copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: value == selected
+                            ? colors.surface
+                            : colors.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
