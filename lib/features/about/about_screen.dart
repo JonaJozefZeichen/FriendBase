@@ -5,13 +5,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/providers.dart';
 import '../../ui_kit/widgets.dart';
+import '../../l10n/l10n.dart';
 import 'privacy_policy.dart';
 
 const _repoUrl = 'https://github.com/JonaJozefZeichen/FriendBase';
 const _author = 'Jona Jožef Zeichen';
-const _legalese =
-    '© 2026 $_author\n'
-    'Released under the MIT License.';
 
 /// Version, where the data lives, privacy policy and licences.
 class AboutScreen extends ConsumerWidget {
@@ -27,9 +25,10 @@ class AboutScreen extends ConsumerWidget {
     final problems = repo.problems;
     final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
     const gap = SizedBox(height: 24);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('About')),
+      appBar: AppBar(title: Text(l10n.about)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
@@ -43,36 +42,31 @@ class AboutScreen extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                Text('Version $version', style: muted),
+                Text(l10n.version(version), style: muted),
                 const SizedBox(height: 4),
-                Text('Made by $_author', style: muted),
+                Text(l10n.madeBy(_author), style: muted),
               ],
             ),
           ),
           gap,
           SectionCard(
-            title: 'Your data',
+            title: l10n.yourData,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Everything stays on this phone. Each friend is a plain '
-                  'Markdown file (friends/<name>/friend.md) with their images '
-                  'next to it, readable in Obsidian or any text editor.',
-                  style: TextStyle(height: 1.4),
-                ),
+                Text(l10n.yourDataBody, style: const TextStyle(height: 1.4)),
                 const SizedBox(height: 12),
-                Text('$count friend${count == 1 ? '' : 's'}'),
+                Text(l10n.friendCount(count)),
                 const SizedBox(height: 12),
-                Text('Folder', style: theme.textTheme.bodySmall),
+                Text(l10n.folder, style: theme.textTheme.bodySmall),
                 SelectableText(repo.storage.root.path, style: muted),
                 if (isIOS) ...[
                   const SizedBox(height: 4),
-                  Text('Files app → On My iPhone → FriendBase', style: muted),
+                  Text(l10n.filesAppHint, style: muted),
                 ],
                 if (problems.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Text('${problems.length} file(s) could not be read:'),
+                  Text(l10n.filesUnreadableList(problems.length)),
                   for (final p in problems)
                     Text('· ${p.folder}: ${p.message}', style: muted),
                 ],
@@ -86,24 +80,24 @@ class AboutScreen extends ConsumerWidget {
               children: [
                 _LinkTile(
                   icon: Icons.privacy_tip_outlined,
-                  title: 'Privacy policy',
+                  title: l10n.privacyPolicy,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const PrivacyScreen()),
                   ),
                 ),
                 _LinkTile(
                   icon: Icons.description_outlined,
-                  title: 'Licences',
+                  title: l10n.licences,
                   onTap: () => showLicensePage(
                     context: context,
                     applicationName: 'FriendBase',
                     applicationVersion: version,
-                    applicationLegalese: _legalese,
+                    applicationLegalese: l10n.legalese(_author),
                   ),
                 ),
                 _LinkTile(
                   icon: Icons.code_rounded,
-                  title: 'Source code',
+                  title: l10n.sourceCode,
                   external: true,
                   onTap: () => launchUrl(
                     Uri.parse(_repoUrl),
@@ -153,16 +147,19 @@ class PrivacyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final german = Localizations.localeOf(context).languageCode == 'de';
+    final sections = german ? kPrivacySectionsDe : kPrivacySections;
+    final date = german ? kPrivacyEffectiveDateDe : kPrivacyEffectiveDate;
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy policy')),
+      appBar: AppBar(title: Text(context.l10n.privacyPolicy)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           Text(
-            'Effective $kPrivacyEffectiveDate',
+            context.l10n.effectiveFrom(date),
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
-          for (final (heading, body) in kPrivacySections) ...[
+          for (final (heading, body) in sections) ...[
             const SizedBox(height: 20),
             Text(
               heading,

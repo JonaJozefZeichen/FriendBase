@@ -13,6 +13,7 @@ import 'data/settings_storage.dart';
 import 'domain/app_settings.dart';
 import 'data/vault_storage.dart';
 import 'features/friend_list/friend_list_screen.dart';
+import 'l10n/l10n.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +64,9 @@ class FriendBaseApp extends ConsumerWidget {
     ref.watch(reminderSyncProvider);
 
     return MaterialApp(
+      locale: localeFor(settings.language),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       // `system` follows the phone: Light theme, Dark as its dark variant.
       // Any other choice is used as-is.
       theme: buildTheme(

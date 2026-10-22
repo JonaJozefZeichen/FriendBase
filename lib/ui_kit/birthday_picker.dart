@@ -1,23 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../domain/birthday.dart';
-import 'widgets.dart';
+import 'package:intl/intl.dart';
 
-const _monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+import '../domain/birthday.dart';
+import '../l10n/l10n.dart';
+import 'widgets.dart';
 
 /// Day · Month · Year wheels in a bottom sheet. The year wheel starts with
 /// `– –` for "year unknown".
@@ -88,6 +76,12 @@ class _BirthdaySheetState extends State<_BirthdaySheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final l10n = context.l10n;
+    // Month names in the app's language (loaded by the Material
+    // localizations), e.g. "October" / "Oktober".
+    final monthName = DateFormat.MMMM(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
     Widget wheel({
       required FixedExtentScrollController controller,
       required int count,
@@ -111,11 +105,11 @@ class _BirthdaySheetState extends State<_BirthdaySheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, ''),
-                  child: const Text('Clear'),
+                  child: Text(l10n.clear),
                 ),
                 Expanded(
                   child: Text(
-                    'Birthday',
+                    l10n.birthday,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
@@ -124,7 +118,7 @@ class _BirthdaySheetState extends State<_BirthdaySheet> {
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, _result),
-                  child: const Text('Done'),
+                  child: Text(l10n.done),
                 ),
               ],
             ),
@@ -158,7 +152,7 @@ class _BirthdaySheetState extends State<_BirthdaySheet> {
                       child: wheel(
                         controller: _monthWheel,
                         count: 12,
-                        label: (i) => _monthNames[i],
+                        label: (i) => monthName.format(DateTime(2000, i + 1)),
                         onChanged: (i) => setState(() {
                           _month = i + 1;
                           _clampDay();
@@ -183,7 +177,7 @@ class _BirthdaySheetState extends State<_BirthdaySheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Leave the year at $kNoValue if you don\'t know it.',
+              l10n.yearUnknownHint(kNoValue),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colors.onSurfaceVariant,
               ),

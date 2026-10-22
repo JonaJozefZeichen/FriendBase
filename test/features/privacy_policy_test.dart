@@ -12,4 +12,13 @@ void main() {
       expect(md, contains('## $heading\n\n$body\n'), reason: heading);
     }
   });
+
+  test('PRIVACY.de.md matches the German in-app privacy policy', () {
+    final md = File('PRIVACY.de.md').readAsStringSync();
+    expect(md, contains('Gültig ab $kPrivacyEffectiveDateDe'));
+    expect(kPrivacySectionsDe, hasLength(kPrivacySections.length));
+    for (final (heading, body) in kPrivacySectionsDe) {
+      expect(md, contains('## $heading\n\n$body\n'), reason: heading);
+    }
+  });
 }

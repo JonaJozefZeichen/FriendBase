@@ -8,6 +8,7 @@ import '../../domain/app_settings.dart';
 import '../../domain/call_status.dart';
 import '../../domain/date_format.dart';
 import '../../domain/friend.dart';
+import '../../l10n/l10n.dart';
 import '../../ui_kit/caption_dialog.dart';
 import '../../ui_kit/friend_avatar.dart';
 import '../../ui_kit/image_source_sheet.dart';
@@ -67,11 +68,11 @@ class FriendDetailScreen extends ConsumerWidget {
                     sliver: SliverFillRemaining(
                       hasScrollBody: false,
                       child: SectionCard(
-                        title: 'Notes',
+                        title: context.l10n.notes,
                         fill: true,
                         child: friend.notes.trim().isEmpty
                             ? Text(
-                                kNotesHint,
+                                context.l10n.notesHint,
                                 style: TextStyle(
                                   color: Theme.of(context).hintColor,
                                 ),
@@ -153,7 +154,7 @@ class _InfoCard extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Edit',
+                  tooltip: context.l10n.edit,
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -188,6 +189,7 @@ class _InfoCard extends ConsumerWidget {
                   year: birthday.year,
                 ),
                 note: _birthdayHint(
+                  context,
                   birthday.daysUntil(today),
                   birthday.turningAge(today),
                 ),
@@ -203,13 +205,12 @@ class _InfoCard extends ConsumerWidget {
     );
   }
 
-  static String _birthdayHint(int days, int? age) {
-    final turns = age == null ? '' : ' · turns $age';
-    return switch (days) {
-      0 => 'today$turns',
-      1 => 'tomorrow$turns',
-      _ => 'in $days days$turns',
-    };
+  static String _birthdayHint(BuildContext context, int days, int? age) {
+    final l10n = context.l10n;
+    return [
+      l10n.birthdayIn(days),
+      if (age != null) l10n.turnsAge(age),
+    ].join(' · ');
   }
 }
 
@@ -298,13 +299,13 @@ class _CallSection extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Last call',
+                      context.l10n.lastCall,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     Text(
-                      lastCallLabel(status.daysSince),
+                      lastCallLabel(context, status.daysSince),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -312,8 +313,6 @@ class _CallSection extends ConsumerWidget {
                   ],
                 ),
               ),
-              StatusPill(status.state),
-              const SizedBox(width: 12),
               _CalledButton(
                 onTap: () => _logCall(context, ref, DateTime.now()),
                 onLongPress: () => _logPastCall(context, ref),
@@ -323,9 +322,11 @@ class _CallSection extends ConsumerWidget {
           const SizedBox(height: 10),
           Text(
             [
-              'Tap the dot after a call · hold it to pick a date',
+              context.l10n.callHint,
               if (history.isNotEmpty)
-                'Recent: ${history.map((t) => _shortDate(dateStyle, t)).join(', ')}',
+                context.l10n.recentCalls(
+                  history.map((t) => _shortDate(dateStyle, t)).join(', '),
+                ),
             ].join('\n'),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -354,14 +355,15 @@ class _CallSection extends ConsumerWidget {
       ..showSnackBar(
         SnackBar(
           content: Text(
-            'Call logged: ${displayDate(style, at)} '
-            '${formatCallTime(at).substring(11)}',
+            context.l10n.callLogged(
+              '${displayDate(style, at)} ${formatCallTime(at).substring(11)}',
+            ),
           ),
           duration: const Duration(seconds: 4),
           // With an action, snackbars stay until dismissed by default.
           persist: false,
           action: SnackBarAction(
-            label: 'Undo',
+            label: context.l10n.undo,
             onPressed: () => notifier.undoLastCall(updated),
           ),
         ),
@@ -403,7 +405,7 @@ class _ImageStrip extends ConsumerWidget {
     final repo = ref.watch(friendRepositoryProvider);
 
     return SectionCard(
-      title: 'Images',
+      title: context.l10n.images,
       padding: const EdgeInsets.all(10),
       child: SizedBox(
         height: _tile,
@@ -461,7 +463,7 @@ class _ImageStrip extends ConsumerWidget {
       final file = ref.read(friendRepositoryProvider).imageFile(updated, added);
       final caption = await showCaptionDialog(
         context,
-        dismissLabel: 'Skip',
+        dismissLabel: context.l10n.skip,
         preview: file == null
             ? null
             : Image.file(
@@ -475,8 +477,9 @@ class _ImageStrip extends ConsumerWidget {
       }
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not add image: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.couldNotAddImage('$e'))),
+      );
     }
   }
 }
@@ -491,7 +494,7 @@ class _AddTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Tooltip(
-      message: 'Add image',
+      message: context.l10n.addImage,
       child: Material(
         color: colors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
@@ -522,11 +525,11 @@ class _CalledButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Tooltip(
-      message: 'Called today',
+      message: context.l10n.calledToday,
       child: Semantics(
         button: true,
-        label: 'Called today',
-        hint: 'Hold to log an earlier call',
+        label: context.l10n.calledToday,
+        hint: context.l10n.calledTodayHint,
         excludeSemantics: true,
         child: Material(
           color: colors.onSurface,

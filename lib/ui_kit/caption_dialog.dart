@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
+
 /// Asks for an image's context. Returns the text, or null if dismissed.
 ///
 /// [preview] shows the image being described, e.g. right after adding it;
@@ -8,14 +10,14 @@ Future<String?> showCaptionDialog(
   BuildContext context, {
   String initial = '',
   Widget? preview,
-  String dismissLabel = 'Cancel',
+  String? dismissLabel,
 }) {
   return showDialog<String>(
     context: context,
     builder: (_) => _CaptionDialog(
       initial: initial,
       preview: preview,
-      dismissLabel: dismissLabel,
+      dismissLabel: dismissLabel ?? context.l10n.cancel,
     ),
   );
 }
@@ -48,7 +50,7 @@ class _CaptionDialogState extends State<_CaptionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('What is this image about?'),
+      title: Text(context.l10n.captionTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -66,9 +68,7 @@ class _CaptionDialogState extends State<_CaptionDialog> {
               autofocus: true,
               minLines: 2,
               maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: 'e.g. the cake she loved at her 30th',
-              ),
+              decoration: InputDecoration(hintText: context.l10n.captionHint),
             ),
           ],
         ),
@@ -80,7 +80,7 @@ class _CaptionDialogState extends State<_CaptionDialog> {
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _controller.text),
-          child: const Text('Save'),
+          child: Text(context.l10n.save),
         ),
       ],
     );

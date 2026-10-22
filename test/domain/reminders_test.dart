@@ -1,8 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:friendbase/domain/app_settings.dart';
 import 'package:friendbase/domain/call_status.dart';
 import 'package:friendbase/domain/friend.dart';
 import 'package:friendbase/domain/reminders.dart';
+import 'package:friendbase/l10n/app_localizations.dart';
 
 void main() {
   final now = DateTime(2026, 10, 22, 12);
@@ -37,6 +40,25 @@ void main() {
         now: now,
       ).single;
       expect(us.body, 'In 3 days (10/29) — turns 32');
+    });
+
+    test('German texts', () {
+      final r = planReminders(
+        [friend('Anna', birthday: '1994-10-29')],
+        both,
+        now: now,
+        strings: lookupAppLocalizations(const Locale('de')),
+      ).single;
+      expect(r.title, 'Geburtstag von Anna');
+      expect(r.body, 'In 3 Tagen (29.10.) — wird 32');
+      final call = planReminders(
+        [friend('Marko', lastCall: DateTime(2026, 10, 20, 19), interval: 10)],
+        both,
+        now: now,
+        strings: lookupAppLocalizations(const Locale('de')),
+      ).single;
+      expect(call.title, 'Zeit, Marko anzurufen');
+      expect(call.body, '10 Tage seit dem letzten Anruf (alle 10 Tage)');
     });
 
     test('1 day before says tomorrow; no age without a year', () {

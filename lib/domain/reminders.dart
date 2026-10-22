@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import '../l10n/app_localizations.dart';
 import 'app_settings.dart';
 import 'birthday.dart';
 import 'call_status.dart';
@@ -29,8 +32,10 @@ List<PlannedReminder> planReminders(
   Iterable<Friend> friends,
   AppSettings settings, {
   DateTime? now,
+  AppLocalizations? strings,
 }) {
   final at = now ?? DateTime.now();
+  final t = strings ?? lookupAppLocalizations(const Locale('en'));
   final planned = <({DateTime when, String title, String body})>[];
 
   // Calendar arithmetic (day ± n), so DST changes never shift the date.
@@ -61,16 +66,23 @@ List<PlannedReminder> planReminders(
         }
         final age = birthday.year == null
             ? ''
-            : ' — turns ${occurrence.year - birthday.year!}';
+            : t.reminderTurns(occurrence.year - birthday.year!);
         planned.add((
           when: when,
-          title: '${friend.name}\'s birthday',
+          title: t.reminderBirthdayTitle(friend.name),
           body: switch (days) {
-            0 => 'Today$age',
-            1 => 'Tomorrow$age',
+            0 => '${t.reminderToday}$age',
+            1 => '${t.reminderTomorrow}$age',
             _ =>
-              'In $days days '
-                  '(${displayDate(settings.dateStyle, occurrence, withYear: false)})$age',
+              t.reminderInDays(
+                    days,
+                    displayDate(
+                      settings.dateStyle,
+                      occurrence,
+                      withYear: false,
+                    ),
+                  ) +
+                  age,
           },
         ));
       }
@@ -89,10 +101,8 @@ List<PlannedReminder> planReminders(
       }
       planned.add((
         when: when,
-        title: 'Time to call ${friend.name}',
-        body:
-            '${calendarDaysBetween(lastCall, when)}d since your last call '
-            '(every ${interval}d)',
+        title: t.reminderCallTitle(friend.name),
+        body: t.reminderCallBody(calendarDaysBetween(lastCall, when), interval),
       ));
     }
   }

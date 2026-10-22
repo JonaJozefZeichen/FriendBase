@@ -10,6 +10,7 @@ import '../../domain/call_status.dart';
 import '../../domain/friend.dart';
 import '../../domain/ulid.dart';
 import '../../domain/date_format.dart';
+import '../../l10n/l10n.dart';
 import '../../ui_kit/birthday_picker.dart';
 import '../../ui_kit/friend_avatar.dart';
 import '../../ui_kit/image_source_sheet.dart';
@@ -102,8 +103,9 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.couldNotSave('$e'))));
     }
   }
 
@@ -112,16 +114,16 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete ${friend.name}?'),
-        content: const Text('Their file, notes and images will be removed.'),
+        title: Text(context.l10n.deleteFriendTitle(friend.name)),
+        content: Text(context.l10n.deleteFriendBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -135,11 +137,15 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.friend == null ? 'New friend' : 'Edit friend'),
+        title: Text(
+          widget.friend == null
+              ? context.l10n.newFriend
+              : context.l10n.editFriend,
+        ),
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
-            child: const Text('Save'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),
@@ -152,50 +158,64 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
             const SizedBox(height: 16),
             _field(
               _name,
-              'Name',
+              context.l10n.name,
               icon: Icons.person_outline_rounded,
               validator: (v) =>
-                  (v ?? '').trim().isEmpty ? 'Please enter a name' : null,
+                  (v ?? '').trim().isEmpty ? context.l10n.nameRequired : null,
             ),
-            _field(_nickname, 'Nickname', icon: Icons.badge_outlined),
+            _field(
+              _nickname,
+              context.l10n.nickname,
+              icon: Icons.badge_outlined,
+            ),
             _birthdayField(),
             _field(
               _phones,
-              'Phone numbers',
+              context.l10n.phoneNumbers,
               icon: Icons.phone_outlined,
-              helper: 'One per line',
+              helper: context.l10n.onePerLine,
               keyboard: TextInputType.phone,
               lines: 2,
             ),
             _field(
               _emails,
-              'Emails',
+              context.l10n.emails,
               icon: Icons.mail_outline_rounded,
-              helper: 'One per line',
+              helper: context.l10n.onePerLine,
               keyboard: TextInputType.emailAddress,
               lines: 2,
             ),
-            _field(_address, 'Address', icon: Icons.home_outlined, lines: 2),
+            _field(
+              _address,
+              context.l10n.address,
+              icon: Icons.home_outlined,
+              lines: 2,
+            ),
             _field(
               _interval,
-              'Call every … days',
+              context.l10n.callEvery,
               icon: Icons.update_rounded,
-              helper: 'Leave empty for the default ($kDefaultCallIntervalDays)',
+              helper: context.l10n.callEveryHelper(kDefaultCallIntervalDays),
               keyboard: TextInputType.number,
               validator: (v) {
                 final s = (v ?? '').trim();
                 if (s.isEmpty) return null;
                 final n = int.tryParse(s);
-                return n == null || n < 1 ? 'A whole number, 1 or more' : null;
+                return n == null || n < 1 ? context.l10n.wholeNumber : null;
               },
             ),
-            _field(_notes, 'Notes', lines: 12, hint: kNotesHint),
+            _field(
+              _notes,
+              context.l10n.notes,
+              lines: 12,
+              hint: context.l10n.notesHint,
+            ),
             if (widget.friend != null) ...[
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: _saving ? null : _confirmDelete,
                 icon: const Icon(Icons.delete_outline_rounded),
-                label: const Text('Delete friend'),
+                label: Text(context.l10n.deleteFriend),
               ),
             ],
           ],
@@ -229,12 +249,12 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
         child: InputDecorator(
           isEmpty: shown.isEmpty,
           decoration: InputDecoration(
-            labelText: 'Birthday',
+            labelText: context.l10n.birthday,
             prefixIcon: const Icon(Icons.cake_outlined),
             suffixIcon: shown.isEmpty
                 ? null
                 : IconButton(
-                    tooltip: 'Clear birthday',
+                    tooltip: context.l10n.clearBirthday,
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => setState(_birthday.clear),
                   ),
@@ -254,7 +274,7 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
     return Center(
       child: Semantics(
         button: true,
-        label: 'Profile picture',
+        label: context.l10n.profilePicture,
         child: GestureDetector(
           onTap: () => _pickAvatar(hasOne: file != null),
           child: Stack(
@@ -291,7 +311,7 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
   Future<void> _pickAvatar({required bool hasOne}) async {
     final choice = await showImageSourceSheet(
       context,
-      removeLabel: hasOne ? 'Remove picture' : null,
+      removeLabel: hasOne ? context.l10n.removePicture : null,
     );
     if (choice == false) {
       setState(() {
@@ -310,9 +330,9 @@ class _FriendEditScreenState extends ConsumerState<FriendEditScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not pick a picture: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.couldNotPickPicture('$e'))),
+      );
     }
   }
 

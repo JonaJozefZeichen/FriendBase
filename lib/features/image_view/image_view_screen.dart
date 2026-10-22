@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/friend.dart';
 import '../../ui_kit/widgets.dart';
+import '../../l10n/l10n.dart';
 import '../../ui_kit/caption_dialog.dart';
 
 /// A friend's images full screen: swipe or use the arrows to move between them,
@@ -51,7 +52,7 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
       body: Stack(
         children: [
           if (friend == null || images.isEmpty)
-            const Center(child: Text('No images'))
+            Center(child: Text(context.l10n.noImages))
           else
             PageView.builder(
               controller: _pages,
@@ -63,12 +64,12 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
                   maxScale: 4,
                   child: Center(
                     child: file == null
-                        ? const Text('This image path is not allowed')
+                        ? Text(context.l10n.imagePathNotAllowed)
                         : Image.file(
                             file,
                             fit: BoxFit.contain,
                             errorBuilder: (_, _, _) =>
-                                Text('Missing file: ${images[i].file}'),
+                                Text(context.l10n.missingFile(images[i].file)),
                           ),
                   ),
                 );
@@ -81,7 +82,7 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
                 padding: const EdgeInsets.only(left: 8),
                 child: FloatingRoundButton(
                   icon: Icons.chevron_left_rounded,
-                  tooltip: 'Previous image',
+                  tooltip: context.l10n.previousImage,
                   onPressed: () => _go(index - 1),
                 ),
               ),
@@ -93,7 +94,7 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
                 padding: const EdgeInsets.only(right: 8),
                 child: FloatingRoundButton(
                   icon: Icons.chevron_right_rounded,
-                  tooltip: 'Next image',
+                  tooltip: context.l10n.nextImage,
                   onPressed: () => _go(index + 1),
                 ),
               ),
@@ -117,7 +118,7 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
                   if (friend != null && images.isNotEmpty)
                     FloatingRoundButton(
                       icon: Icons.delete_outline_rounded,
-                      tooltip: 'Delete image',
+                      tooltip: context.l10n.deleteImage,
                       onPressed: () =>
                           _confirmRemove(context, friend, images[index]),
                     )
@@ -164,16 +165,16 @@ class _ImageViewScreenState extends ConsumerState<ImageViewScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete this image?'),
-        content: const Text('The file is removed from the friend\'s folder.'),
+        title: Text(context.l10n.deleteImageTitle),
+        content: Text(context.l10n.deleteImageBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -233,7 +234,7 @@ class _CaptionCard extends StatelessWidget {
                 Expanded(
                   child: SingleChildScrollView(
                     child: Text(
-                      caption.isEmpty ? 'Tap to add context' : caption,
+                      caption.isEmpty ? context.l10n.tapToAddContext : caption,
                       style: caption.isEmpty
                           ? TextStyle(color: Theme.of(context).hintColor)
                           : const TextStyle(height: 1.4),

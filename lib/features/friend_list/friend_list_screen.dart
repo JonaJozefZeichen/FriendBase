@@ -6,6 +6,7 @@ import '../../domain/call_status.dart';
 import '../../domain/date_format.dart';
 import '../../domain/friend.dart';
 import '../../domain/app_settings.dart';
+import '../../l10n/l10n.dart';
 import '../../ui_kit/friend_avatar.dart';
 import '../../ui_kit/widgets.dart';
 import '../friend_detail/friend_detail_screen.dart';
@@ -40,10 +41,10 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FriendBase'),
+        title: Text(context.l10n.appTitle),
         actions: [
           IconButton(
-            tooltip: 'Options',
+            tooltip: context.l10n.options,
             icon: const Icon(Icons.tune_rounded),
             onPressed: () => Navigator.of(
               context,
@@ -53,7 +54,7 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Add friend',
+        tooltip: context.l10n.addFriend,
         onPressed: () => Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => const FriendEditScreen())),
         child: const Icon(Icons.person_add_alt_1_rounded),
@@ -63,9 +64,9 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search_rounded),
-                hintText: 'Search',
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search_rounded),
+                hintText: context.l10n.search,
                 isDense: true,
               ),
               onChanged: (v) => setState(() => _query = v),
@@ -75,14 +76,17 @@ class _FriendListScreenState extends ConsumerState<FriendListScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
-                '${problems.length} file(s) could not be read: '
-                '${problems.map((p) => p.folder).join(', ')}',
+                context.l10n.filesUnreadable(
+                  problems.length,
+                  problems.map((p) => p.folder).join(', '),
+                ),
               ),
             ),
           Expanded(
             child: friends.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Something went wrong: $e')),
+              error: (e, _) =>
+                  Center(child: Text(context.l10n.somethingWentWrong('$e'))),
               data: (all) {
                 if (all.isEmpty) return const _EmptyState();
                 final settings = ref.watch(settingsProvider);
@@ -187,7 +191,7 @@ class _LastCallTrailing extends StatelessWidget {
       children: [
         if (status.state == CallState.overdue)
           Semantics(
-            label: 'Overdue',
+            label: context.l10n.overdue,
             child: Container(
               width: 8,
               height: 8,
@@ -201,8 +205,8 @@ class _LastCallTrailing extends StatelessWidget {
         Text(
           switch (days) {
             null => kNoValue,
-            0 => 'Today',
-            _ => '${days}d',
+            0 => context.l10n.lastCallAgo(0),
+            _ => context.l10n.daysShort(days),
           },
           style: TextStyle(
             fontWeight: urgent ? FontWeight.w700 : FontWeight.w400,
@@ -238,11 +242,7 @@ class _BirthdayTrailing extends StatelessWidget {
           style: TextStyle(color: muted),
         ),
         Text(
-          switch (days) {
-            0 => 'today',
-            1 => 'tomorrow',
-            _ => 'in ${days}d',
-          },
+          context.l10n.inDaysShort(days),
           style: theme.textTheme.bodySmall?.copyWith(
             color: muted.withValues(alpha: 0.75),
             fontWeight: days <= 1 ? FontWeight.w700 : null,
@@ -271,10 +271,13 @@ class _EmptyState extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 12),
-            Text('No friends yet', style: theme.textTheme.titleMedium),
+            Text(
+              context.l10n.noFriendsTitle,
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
             Text(
-              'Tap the button below to add someone.',
+              context.l10n.noFriendsBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
             ),

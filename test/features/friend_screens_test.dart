@@ -592,17 +592,17 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Alice'));
     await tester.pumpAndSettle();
-    expect(find.text(kNotesHint), findsOneWidget);
+    expect(find.text('Facts, Favourites, etc..'), findsOneWidget);
     expect(find.textContaining('## Food'), findsNothing);
 
     await tester.tap(find.byTooltip('Edit'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
-      find.text(kNotesHint),
+      find.text('Facts, Favourites, etc..'),
       find.byType(ListView),
       const Offset(0, -300),
     );
-    expect(find.text(kNotesHint), findsOneWidget);
+    expect(find.text('Facts, Favourites, etc..'), findsOneWidget);
   });
 
   testWidgets('back button stays on screen while scrolling', (tester) async {
@@ -747,5 +747,80 @@ void main() {
     await tester.pumpAndSettle();
     await _openOptions(tester, find.text('Show in list'));
     expect(find.text('Show in list'), findsOneWidget);
+  });
+
+  testWidgets('switching to German translates the app live', (tester) async {
+    final settings = _MemorySettings();
+    final days18 = DateTime.now().subtract(const Duration(days: 18));
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([
+          Friend(
+            id: '1',
+            name: 'Anna',
+            folder: 'a',
+            birthdayRaw: '1994-10-29',
+            calls: [formatCallTime(days18)],
+          ),
+        ]),
+        settings: settings,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Add friend'), findsOneWidget);
+
+    await _openOptions(tester);
+    await tester.tap(find.text('Deutsch'));
+    await tester.pumpAndSettle();
+    expect(settings.saved?.language, AppLanguage.de);
+    expect(find.text('Optionen'), findsOneWidget);
+    expect(find.text('Sprache'), findsOneWidget);
+    expect(find.text('Dunkel'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Zurück'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Person hinzufügen'), findsOneWidget);
+    expect(find.text('18 T'), findsOneWidget);
+
+    await tester.tap(find.text('Anna'));
+    await tester.pumpAndSettle();
+    expect(find.text('Letzter Anruf'), findsOneWidget);
+    expect(find.text('vor 18 Tagen'), findsOneWidget);
+    expect(find.textContaining('wird 32'), findsOneWidget);
+    expect(find.text('Notizen'), findsOneWidget);
+    expect(find.text('Fakten, Lieblingsdinge usw.'), findsOneWidget);
+
+    // Built-in Flutter widgets follow too, e.g. the birthday wheels.
+    await tester.tap(find.byTooltip('Bearbeiten'));
+    await tester.pumpAndSettle();
+    expect(find.text('Person bearbeiten'), findsOneWidget);
+    await tester.tap(find.text('Geburtstag'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('Oktober'), findsOneWidget);
+    expect(find.text('Fertig'), findsOneWidget);
+  });
+
+  testWidgets('German privacy policy', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        _MemoryRepository([]),
+        initial: const AppSettings(language: AppLanguage.de),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Noch niemand hier'), findsOneWidget);
+    await tester.tap(find.byTooltip('Optionen'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Über FriendBase'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Über FriendBase'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Datenschutzerklärung'));
+    await tester.pumpAndSettle();
+    expect(find.text('Kurz gesagt'), findsOneWidget);
+    expect(find.text('Gültig ab 22. Oktober 2026'), findsOneWidget);
   });
 }

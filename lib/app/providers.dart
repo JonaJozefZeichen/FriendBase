@@ -9,6 +9,7 @@ import '../data/settings_storage.dart';
 import '../domain/app_settings.dart';
 import '../domain/friend.dart';
 import '../domain/reminders.dart';
+import '../l10n/l10n.dart';
 
 /// Overridden in `main()` once the vault directory is known.
 final friendRepositoryProvider = Provider<FriendRepository>(
@@ -51,7 +52,7 @@ final reminderSyncProvider = Provider<void>((ref) {
   final settings = ref.watch(settingsProvider);
   if (friends == null) return;
   final plan = settings.anyReminders
-      ? planReminders(friends, settings)
+      ? planReminders(friends, settings, strings: l10nFor(settings.language))
       : const <PlannedReminder>[];
   ref
       .read(notificationServiceProvider)

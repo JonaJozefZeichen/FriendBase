@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
-import '../domain/call_status.dart';
+import '../l10n/l10n.dart';
 
 /// A soft rounded card with an optional small heading above it.
 class SectionCard extends StatelessWidget {
@@ -101,44 +101,9 @@ class BackRoundButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => FloatingRoundButton(
     icon: Icons.arrow_back_ios_new_rounded,
-    tooltip: 'Back',
+    tooltip: context.l10n.back,
     onPressed: () => Navigator.of(context).maybePop(),
   );
-}
-
-/// A small rounded label for a friend's call status.
-class StatusPill extends StatelessWidget {
-  const StatusPill(this.state, {super.key});
-
-  final CallState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final strong = state == CallState.overdue;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: switch (state) {
-          CallState.overdue => colors.onSurface,
-          CallState.due => colors.surfaceContainerHigh,
-          _ => Colors.transparent,
-        },
-        border: state == CallState.never || state == CallState.ok
-            ? Border.all(color: colors.outline)
-            : null,
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        callLabel(state),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: strong ? colors.surface : colors.onSurface,
-        ),
-      ),
-    );
-  }
 }
 
 /// A row with a rounded tick box; the whole row is tappable.
@@ -258,20 +223,9 @@ class SegmentedChoice<T> extends StatelessWidget {
   }
 }
 
-String callLabel(CallState state) => switch (state) {
-  CallState.never => 'New',
-  CallState.ok => 'OK',
-  CallState.due => 'Due',
-  CallState.overdue => 'Overdue',
-};
-
 /// Shown where a date would be when there is none, e.g. never called.
 const kNoValue = '– –';
 
 /// `Today`, `Yesterday`, `18 days ago`, or `– –` if never called.
-String lastCallLabel(int? days) => switch (days) {
-  null => kNoValue,
-  0 => 'Today',
-  1 => 'Yesterday',
-  _ => '$days days ago',
-};
+String lastCallLabel(BuildContext context, int? days) =>
+    days == null ? kNoValue : context.l10n.lastCallAgo(days);

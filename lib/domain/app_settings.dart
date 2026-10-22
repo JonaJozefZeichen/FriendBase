@@ -6,6 +6,10 @@ enum AppFont { system, serif, readable, mono }
 
 enum ListSort { urgency, name, birthday }
 
+/// App language. `system` follows the phone (German if it's set to
+/// German, English otherwise).
+enum AppLanguage { system, en, de }
+
 /// How dates are shown: 29.10.1994, 10/29/1994 or 1994-10-29.
 enum DateStyle { european, american, iso }
 
@@ -27,6 +31,7 @@ class AppSettings {
     this.compactList = false,
     this.listDetail = ListDetail.lastCall,
     this.dateStyle = DateStyle.european,
+    this.language = AppLanguage.system,
     this.sort = ListSort.urgency,
     this.remindBirthdays = false,
     this.birthdayDaysBefore = 3,
@@ -45,6 +50,7 @@ class AppSettings {
 
   final ListDetail listDetail;
   final DateStyle dateStyle;
+  final AppLanguage language;
   final ListSort sort;
   final bool remindBirthdays;
   final int birthdayDaysBefore;
@@ -67,6 +73,7 @@ class AppSettings {
     bool? compactList,
     ListDetail? listDetail,
     DateStyle? dateStyle,
+    AppLanguage? language,
     ListSort? sort,
     bool? remindBirthdays,
     int? birthdayDaysBefore,
@@ -82,6 +89,7 @@ class AppSettings {
       compactList: compactList ?? this.compactList,
       listDetail: listDetail ?? this.listDetail,
       dateStyle: dateStyle ?? this.dateStyle,
+      language: language ?? this.language,
       sort: sort ?? this.sort,
       remindBirthdays: remindBirthdays ?? this.remindBirthdays,
       birthdayDaysBefore: birthdayDaysBefore ?? this.birthdayDaysBefore,
@@ -103,6 +111,7 @@ class AppSettings {
     'compact_list': compactList,
     'list_detail': listDetail.name,
     'date_style': dateStyle.name,
+    'language': language.name,
     'sort': sort.name,
     'remind_birthdays': remindBirthdays,
     'birthday_days_before': birthdayDaysBefore,
@@ -140,6 +149,7 @@ class AppSettings {
           ListDetail.values.asNameMap()[json['list_detail']] ?? d.listDetail,
       dateStyle:
           DateStyle.values.asNameMap()[json['date_style']] ?? d.dateStyle,
+      language: AppLanguage.values.asNameMap()[json['language']] ?? d.language,
       sort: ListSort.values.asNameMap()[json['sort']] ?? d.sort,
       remindBirthdays: pick('remind_birthdays', d.remindBirthdays),
       birthdayDaysBefore: kBirthdayDaysBefore.contains(days)

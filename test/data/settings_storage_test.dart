@@ -34,6 +34,7 @@ void main() {
       compactList: true,
       listDetail: ListDetail.birthday,
       dateStyle: DateStyle.iso,
+      language: AppLanguage.de,
       sort: ListSort.birthday,
       remindBirthdays: true,
       birthdayDaysBefore: 7,

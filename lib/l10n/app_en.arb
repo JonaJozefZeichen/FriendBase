@@ -1,0 +1,329 @@
+{
+  "@@locale": "en",
+  "appTitle": "FriendBase",
+  "back": "Back",
+  "options": "Options",
+  "addFriend": "Add friend",
+  "search": "Search",
+  "filesUnreadable": "{count} file(s) could not be read: {names}",
+  "@filesUnreadable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "somethingWentWrong": "Something went wrong: {error}",
+  "@somethingWentWrong": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "overdue": "Overdue",
+  "daysShort": "{days}d",
+  "@daysShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "inDaysShort": "{days, plural, =0{today} =1{tomorrow} other{in {days}d}}",
+  "@inDaysShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "noFriendsTitle": "No friends yet",
+  "noFriendsBody": "Tap the button below to add someone.",
+  "lastCallAgo": "{days, plural, =0{Today} =1{Yesterday} other{{days} days ago}}",
+  "@lastCallAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "notes": "Notes",
+  "notesHint": "Facts, Favourites, etc..",
+  "edit": "Edit",
+  "birthdayIn": "{days, plural, =0{today} =1{tomorrow} other{in {days} days}}",
+  "@birthdayIn": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "turnsAge": "turns {age}",
+  "@turnsAge": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "lastCall": "Last call",
+  "callHint": "Tap the dot after a call · hold it to pick a date",
+  "recentCalls": "Recent: {dates}",
+  "@recentCalls": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
+  "callLogged": "Call logged: {when}",
+  "@callLogged": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "undo": "Undo",
+  "images": "Images",
+  "skip": "Skip",
+  "couldNotAddImage": "Could not add image: {error}",
+  "@couldNotAddImage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "addImage": "Add image",
+  "calledToday": "Called today",
+  "calledTodayHint": "Hold to log an earlier call",
+  "noImages": "No images",
+  "imagePathNotAllowed": "This image path is not allowed",
+  "missingFile": "Missing file: {file}",
+  "@missingFile": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "previousImage": "Previous image",
+  "nextImage": "Next image",
+  "deleteImage": "Delete image",
+  "deleteImageTitle": "Delete this image?",
+  "deleteImageBody": "The file is removed from the friend's folder.",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "save": "Save",
+  "tapToAddContext": "Tap to add context",
+  "captionTitle": "What is this image about?",
+  "captionHint": "e.g. the cake she loved at her 30th",
+  "chooseFromGallery": "Choose from gallery",
+  "takePhoto": "Take a photo",
+  "couldNotSave": "Could not save: {error}",
+  "@couldNotSave": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFriendTitle": "Delete {name}?",
+  "@deleteFriendTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFriendBody": "Their file, notes and images will be removed.",
+  "newFriend": "New friend",
+  "editFriend": "Edit friend",
+  "name": "Name",
+  "nameRequired": "Please enter a name",
+  "nickname": "Nickname",
+  "phoneNumbers": "Phone numbers",
+  "onePerLine": "One per line",
+  "emails": "Emails",
+  "address": "Address",
+  "callEvery": "Call every … days",
+  "callEveryHelper": "Leave empty for the default ({days})",
+  "@callEveryHelper": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "wholeNumber": "A whole number, 1 or more",
+  "deleteFriend": "Delete friend",
+  "birthday": "Birthday",
+  "clearBirthday": "Clear birthday",
+  "profilePicture": "Profile picture",
+  "removePicture": "Remove picture",
+  "couldNotPickPicture": "Could not pick a picture: {error}",
+  "@couldNotPickPicture": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "clear": "Clear",
+  "done": "Done",
+  "yearUnknownHint": "Leave the year at {dash} if you don't know it.",
+  "@yearUnknownHint": {
+    "placeholders": {
+      "dash": {
+        "type": "String"
+      }
+    }
+  },
+  "theme": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeRose": "Rose",
+  "themeMint": "Mint",
+  "themeSky": "Sky",
+  "themeLavender": "Lavender",
+  "display": "Display",
+  "font": "Font",
+  "fontSystem": "System",
+  "fontSerif": "Serif",
+  "fontReadable": "Readable",
+  "fontMono": "Mono",
+  "textSize": "Text size",
+  "dateFormat": "Date format",
+  "compactList": "Compact list",
+  "compactListHint": "Smaller rows, fewer details",
+  "list": "List",
+  "sortBy": "Sort by",
+  "sortCallDue": "Call due",
+  "sortName": "Name",
+  "showInList": "Show in list",
+  "nothing": "Nothing",
+  "language": "Language",
+  "languageSystem": "System",
+  "aboutApp": "About FriendBase",
+  "aboutAppHint": "Version, your data, privacy, licences",
+  "reminders": "Reminders",
+  "birthdaysAhead": "Birthdays ahead",
+  "birthdaysAheadHint": "A few days before, to plan something",
+  "daysBefore": "Days before",
+  "birthdaysOnDay": "Birthdays on the day",
+  "birthdaysOnDayHint": "A nudge to send your wishes",
+  "overdueCalls": "Overdue calls",
+  "overdueCallsHint": "When a friend passes their call interval",
+  "timeOfDay": "Time of day",
+  "notificationsOff": "Notifications are off for FriendBase. You can allow them in your phone settings.",
+  "about": "About",
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "madeBy": "Made by {author}",
+  "@madeBy": {
+    "placeholders": {
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "yourData": "Your data",
+  "yourDataBody": "Everything stays on this phone. Each friend is a plain Markdown file (friends/<name>/friend.md) with their images next to it, readable in Obsidian or any text editor.",
+  "friendCount": "{count, plural, =1{1 friend} other{{count} friends}}",
+  "@friendCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "folder": "Folder",
+  "filesAppHint": "Files app → On My iPhone → FriendBase",
+  "filesUnreadableList": "{count} file(s) could not be read:",
+  "@filesUnreadableList": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyPolicy": "Privacy policy",
+  "licences": "Licences",
+  "sourceCode": "Source code",
+  "legalese": "© 2026 {author}\nReleased under the MIT License.",
+  "@legalese": {
+    "placeholders": {
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "effectiveFrom": "Effective {date}",
+  "@effectiveFrom": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderBirthdayTitle": "{name}'s birthday",
+  "@reminderBirthdayTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderToday": "Today",
+  "reminderTomorrow": "Tomorrow",
+  "reminderInDays": "In {days} days ({date})",
+  "@reminderInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderTurns": " — turns {age}",
+  "@reminderTurns": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "reminderCallTitle": "Time to call {name}",
+  "@reminderCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderCallBody": "{days}d since your last call (every {interval}d)",
+  "@reminderCallBody": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "interval": {
+        "type": "int"
+      }
+    }
+  }
+}

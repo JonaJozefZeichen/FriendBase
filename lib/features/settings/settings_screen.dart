@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../domain/app_settings.dart';
 import '../../domain/date_format.dart';
+import '../../l10n/l10n.dart';
 import '../../ui_kit/widgets.dart';
 import '../about/about_screen.dart';
 
@@ -19,14 +20,28 @@ class SettingsScreen extends ConsumerWidget {
     void update(AppSettings Function(AppSettings) change) =>
         notifier.update(change);
 
+    final l10n = context.l10n;
     const gap = SizedBox(height: 24);
     return Scaffold(
-      appBar: AppBar(title: const Text('Options')),
+      appBar: AppBar(title: Text(l10n.options)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           SectionCard(
-            title: 'Theme',
+            title: l10n.language,
+            child: SegmentedChoice<AppLanguage>(
+              options: [
+                (AppLanguage.system, l10n.languageSystem, null),
+                (AppLanguage.en, 'English', null),
+                (AppLanguage.de, 'Deutsch', null),
+              ],
+              selected: settings.language,
+              onSelected: (v) => update((s) => s.copyWith(language: v)),
+            ),
+          ),
+          gap,
+          SectionCard(
+            title: l10n.theme,
             child: _ThemeGrid(
               selected: settings.theme,
               onSelected: (t) => update((s) => s.copyWith(theme: t)),
@@ -34,18 +49,18 @@ class SettingsScreen extends ConsumerWidget {
           ),
           gap,
           SectionCard(
-            title: 'Display',
+            title: l10n.display,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _Label('Font'),
+                _Label(l10n.font),
                 SegmentedChoice<AppFont>(
                   options: [
                     for (final (font, label) in [
-                      (AppFont.system, 'System'),
-                      (AppFont.serif, 'Serif'),
-                      (AppFont.readable, 'Readable'),
-                      (AppFont.mono, 'Mono'),
+                      (AppFont.system, l10n.fontSystem),
+                      (AppFont.serif, l10n.fontSerif),
+                      (AppFont.readable, l10n.fontReadable),
+                      (AppFont.mono, l10n.fontMono),
                     ])
                       (font, label, TextStyle(fontFamily: fontFamilyFor(font))),
                   ],
@@ -53,7 +68,7 @@ class SettingsScreen extends ConsumerWidget {
                   onSelected: (f) => update((s) => s.copyWith(font: f)),
                 ),
                 const SizedBox(height: 16),
-                const _Label('Text size'),
+                _Label(l10n.textSize),
                 SegmentedChoice<double>(
                   options: [
                     for (final MapEntry(key: label, value: scale)
@@ -64,7 +79,7 @@ class SettingsScreen extends ConsumerWidget {
                   onSelected: (v) => update((s) => s.copyWith(textScale: v)),
                 ),
                 const SizedBox(height: 16),
-                const _Label('Date format'),
+                _Label(l10n.dateFormat),
                 SegmentedChoice<DateStyle>(
                   options: [
                     for (final style in DateStyle.values)
@@ -79,8 +94,8 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 ToggleRow(
-                  label: 'Compact list',
-                  subtitle: 'Smaller rows, fewer details',
+                  label: l10n.compactList,
+                  subtitle: l10n.compactListHint,
                   value: settings.compactList,
                   onChanged: (v) => update((s) => s.copyWith(compactList: v)),
                 ),
@@ -89,27 +104,27 @@ class SettingsScreen extends ConsumerWidget {
           ),
           gap,
           SectionCard(
-            title: 'List',
+            title: l10n.list,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _Label('Sort by'),
+                _Label(l10n.sortBy),
                 SegmentedChoice<ListSort>(
-                  options: const [
-                    (ListSort.urgency, 'Call due', null),
-                    (ListSort.name, 'Name', null),
-                    (ListSort.birthday, 'Birthday', null),
+                  options: [
+                    (ListSort.urgency, l10n.sortCallDue, null),
+                    (ListSort.name, l10n.sortName, null),
+                    (ListSort.birthday, l10n.birthday, null),
                   ],
                   selected: settings.sort,
                   onSelected: (v) => update((s) => s.copyWith(sort: v)),
                 ),
                 const SizedBox(height: 16),
-                const _Label('Show in list'),
+                _Label(l10n.showInList),
                 SegmentedChoice<ListDetail>(
-                  options: const [
-                    (ListDetail.lastCall, 'Last call', null),
-                    (ListDetail.birthday, 'Birthday', null),
-                    (ListDetail.none, 'Nothing', null),
+                  options: [
+                    (ListDetail.lastCall, l10n.lastCall, null),
+                    (ListDetail.birthday, l10n.birthday, null),
+                    (ListDetail.none, l10n.nothing, null),
                   ],
                   selected: settings.listDetail,
                   onSelected: (v) => update((s) => s.copyWith(listDetail: v)),
@@ -124,8 +139,8 @@ class SettingsScreen extends ConsumerWidget {
             padding: EdgeInsets.zero,
             child: ListTile(
               leading: const Icon(Icons.info_outline_rounded),
-              title: const Text('About FriendBase'),
-              subtitle: const Text('Version, your data, privacy, licences'),
+              title: Text(l10n.aboutApp),
+              subtitle: Text(l10n.aboutAppHint),
               trailing: const Icon(Icons.chevron_right_rounded),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(kRadius),
@@ -199,8 +214,11 @@ class _ThemeGrid extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: theme == AppTheme.system
-                          ? _systemSwatch()
-                          : _swatch(kPalettes[theme]!),
+                          ? _systemSwatch(_themeName(context, theme))
+                          : _swatch(
+                              kPalettes[theme]!,
+                              _themeName(context, theme),
+                            ),
                     ),
                   ),
                 ),
@@ -211,17 +229,30 @@ class _ThemeGrid extends StatelessWidget {
     );
   }
 
-  Widget _swatch(Palette p) => Container(
+  static String _themeName(BuildContext context, AppTheme theme) {
+    final l10n = context.l10n;
+    return switch (theme) {
+      AppTheme.system => l10n.themeSystem,
+      AppTheme.light => l10n.themeLight,
+      AppTheme.dark => l10n.themeDark,
+      AppTheme.rose => l10n.themeRose,
+      AppTheme.mint => l10n.themeMint,
+      AppTheme.sky => l10n.themeSky,
+      AppTheme.lavender => l10n.themeLavender,
+    };
+  }
+
+  Widget _swatch(Palette p, String name) => Container(
     color: p.bg,
     alignment: Alignment.center,
     child: Text(
-      p.name,
+      name,
       style: TextStyle(color: p.fg, fontWeight: FontWeight.w600),
     ),
   );
 
   /// Half Light, half Dark: follows the phone.
-  Widget _systemSwatch() => Stack(
+  Widget _systemSwatch(String name) => Stack(
     fit: StackFit.expand,
     children: [
       Row(
@@ -238,7 +269,7 @@ class _ThemeGrid extends StatelessWidget {
             borderRadius: BorderRadius.circular(99),
           ),
           child: Text(
-            'System',
+            name,
             style: TextStyle(color: kLight.fg, fontWeight: FontWeight.w600),
           ),
         ),
@@ -256,20 +287,20 @@ class _RemindersCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SectionCard(
-      title: 'Reminders',
+      title: context.l10n.reminders,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ToggleRow(
-            label: 'Birthdays ahead',
-            subtitle: 'A few days before, to plan something',
+            label: context.l10n.birthdaysAhead,
+            subtitle: context.l10n.birthdaysAheadHint,
             value: settings.remindBirthdays,
             onChanged: (v) =>
                 _toggle(context, ref, v, (s) => s.copyWith(remindBirthdays: v)),
           ),
           if (settings.remindBirthdays) ...[
             const SizedBox(height: 4),
-            const _Label('Days before'),
+            _Label(context.l10n.daysBefore),
             SegmentedChoice<int>(
               options: [for (final d in kBirthdayDaysBefore) (d, '$d', null)],
               selected: settings.birthdayDaysBefore,
@@ -279,8 +310,8 @@ class _RemindersCard extends ConsumerWidget {
             const SizedBox(height: 4),
           ],
           ToggleRow(
-            label: 'Birthdays on the day',
-            subtitle: 'A nudge to send your wishes',
+            label: context.l10n.birthdaysOnDay,
+            subtitle: context.l10n.birthdaysOnDayHint,
             value: settings.remindBirthdayOnDay,
             onChanged: (v) => _toggle(
               context,
@@ -290,8 +321,8 @@ class _RemindersCard extends ConsumerWidget {
             ),
           ),
           ToggleRow(
-            label: 'Overdue calls',
-            subtitle: 'When a friend passes their call interval',
+            label: context.l10n.overdueCalls,
+            subtitle: context.l10n.overdueCallsHint,
             value: settings.remindOverdueCalls,
             onChanged: (v) => _toggle(
               context,
@@ -308,7 +339,7 @@ class _RemindersCard extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
-                  const Expanded(child: Text('Time of day')),
+                  Expanded(child: Text(context.l10n.timeOfDay)),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -351,12 +382,7 @@ class _RemindersCard extends ConsumerWidget {
       if (!granted) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Notifications are off for FriendBase. '
-                'You can allow them in your phone settings.',
-              ),
-            ),
+            SnackBar(content: Text(context.l10n.notificationsOff)),
           );
         }
         return;
